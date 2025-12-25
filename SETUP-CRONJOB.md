@@ -3,9 +3,10 @@
 ## Tổng quan
 
 Cronjob sẽ tự động:
-- Gọi API quét RSI mỗi 5 phút
+- Gọi API quét RSI từ 5:50 sáng đến 11:50 sáng (giờ Việt Nam), mỗi 30 phút
+- Lịch chạy: 5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50
 - Lưu vào bảng `scan_history` khi có data (coins với RSI >= 70)
-- Tự động xóa dữ liệu cũ hơn 24 giờ
+- Tự động xóa dữ liệu cũ hơn 48 giờ
 
 ## Bước 1: Tạo Edge Function trên Supabase
 
@@ -82,10 +83,11 @@ Trước khi tạo cron job, bạn cần:
 Trong SQL Editor, copy và chạy SQL sau (thay thế các giá trị):
 
 ```sql
--- Tạo cron job chạy mỗi 5 phút
+-- Tạo cron job chạy mỗi 10 phút
+-- Edge Function sẽ filter để chỉ chạy trong window 5:50-11:50 và đúng phút :20/:50
 SELECT cron.schedule(
-  'scan-rsi-every-5min',  -- Tên job
-  '*/5 * * * *',          -- Chạy mỗi 5 phút (:00, :05, :10, :15, ...)
+  'scan-rsi-every-30min-morning',  -- Tên job
+  '*/10 * * * *',                  -- Chạy mỗi 10 phút (:00, :10, :20, :30, :40, :50)
   $$
   SELECT
     net.http_post(
@@ -110,7 +112,7 @@ Click **Run** để tạo cron job
 ### 5.1. Kiểm tra job đã được tạo
 ```sql
 -- Xem danh sách các cron job
-SELECT * FROM cron.job WHERE jobname = 'scan-rsi-every-5min';
+SELECT * FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning';
 ```
 
 Nếu có kết quả trả về → Job đã được tạo thành công ✅
@@ -130,7 +132,7 @@ SELECT
   start_time,
   end_time
 FROM cron.job_run_details 
-WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-5min')
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning')
 ORDER BY start_time DESC 
 LIMIT 20;
 ```
@@ -199,7 +201,7 @@ curl -X POST https://your-app.vercel.app/api/scan-rsi \
 ### Xóa Cron Job
 Nếu muốn dừng cron job:
 ```sql
-SELECT cron.unschedule('scan-rsi-every-5min');
+SELECT cron.unschedule('scan-rsi-every-30min-morning');
 ```
 
 ### Xem tất cả cron jobs
@@ -215,5 +217,5 @@ SELECT * FROM cron.job;
 4. ✅ Tạo cron job với SQL (chỉ cần thay YOUR_ANON_KEY, URL đã được set sẵn)
 5. ✅ Kiểm tra job đã chạy và data đã lưu
 
-Sau khi setup xong, hệ thống sẽ tự động quét RSI mỗi 5 phút và lưu vào history! 🎉
+Sau khi setup xong, hệ thống sẽ tự động quét RSI từ 5:50 sáng đến 11:50 sáng (giờ Việt Nam), mỗi 30 phút và lưu vào history! 🎉
 

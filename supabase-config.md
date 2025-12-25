@@ -37,11 +37,12 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 Run this SQL in Supabase SQL Editor (chỉ cần thay YOUR_ANON_KEY):
 
 ```sql
--- Create cron job to run every 5 minutes
--- This will trigger at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55 of each hour
+-- Create cron job to run every 10 minutes
+-- Edge Function will filter to only run from 5:50 AM to 11:50 AM VN time, every 30 minutes
+-- Schedule: 5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50
 SELECT cron.schedule(
-  'scan-rsi-every-5min',
-  '*/5 * * * *', -- Every 5 minutes
+  'scan-rsi-every-30min-morning',
+  '*/10 * * * *', -- Every 10 minutes (:00, :10, :20, :30, :40, :50)
   $$
   SELECT
     net.http_post(
@@ -67,7 +68,7 @@ SELECT * FROM cron.job;
 
 -- Check job run history
 SELECT * FROM cron.job_run_details 
-WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-5min')
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning')
 ORDER BY start_time DESC 
 LIMIT 10;
 ```
@@ -84,36 +85,35 @@ curl -X POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/scan-rsi \
 
 ## Notes
 
-- The function will only execute scans from 18:00 to 06:00 Vietnam time (GMT+7)
-- Scans run at :05 seconds of each 5-minute interval (e.g., 18:00:05, 18:05:05, 18:10:05, etc.)
-- The function waits until :05 seconds before executing the scan
-- Old history entries (>24 hours) are automatically deleted after each scan
-- Cron job runs every 5 minutes, but the function filters to only execute during the time window
+- The function will only execute scans from 5:50 AM to 11:50 AM Vietnam time (GMT+7)
+- Scans run every 30 minutes: 5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50
+- Old history entries (>48 hours) are automatically deleted after each scan
+- Cron job runs every 10 minutes, but the function filters to only execute during the time window and at correct minutes
 
 ## Troubleshooting
 
 ### Check if cron job is running:
 ```sql
 SELECT * FROM cron.job_run_details 
-WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-5min')
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning')
 ORDER BY start_time DESC 
 LIMIT 20;
 ```
 
 ### Unschedule the job:
 ```sql
-SELECT cron.unschedule('scan-rsi-every-5min');
+SELECT cron.unschedule('scan-rsi-every-30min-morning');
 ```
 
 ### Update the schedule:
 ```sql
 -- First unschedule
-SELECT cron.unschedule('scan-rsi-every-5min');
+SELECT cron.unschedule('scan-rsi-every-30min-morning');
 
 -- Then create new schedule with different timing
 SELECT cron.schedule(
-  'scan-rsi-every-5min',
-  '*/5 * * * *',
+  'scan-rsi-every-30min-morning',
+  '*/10 * * * *',
   $$...$$
 );
 ```

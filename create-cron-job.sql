@@ -1,4 +1,5 @@
--- Tạo cron job để tự động quét RSI mỗi 5 phút
+-- Tạo cron job để tự động quét RSI
+-- Chạy từ 5:50 sáng đến 11:50 sáng (giờ Việt Nam), mỗi 30 phút
 -- Chạy file này trong Supabase SQL Editor
 
 -- Bước 1: Enable pg_cron extension (nếu chưa có)
@@ -8,9 +9,11 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- LƯU Ý: 
 -- - Thay YOUR_PROJECT_REF bằng Reference ID của project (lấy từ Settings → General → Reference ID)
 -- - Thay YOUR_ANON_KEY bằng anon key của bạn (lấy từ Settings → API → anon key)
+-- Cron job chạy mỗi 10 phút để cover các thời điểm :20 và :50
+-- Edge Function sẽ filter để chỉ chạy trong window 5:50-11:50 và đúng phút :20/:50
 SELECT cron.schedule(
-  'scan-rsi-every-5min',  -- Tên job
-  '*/5 * * * *',          -- Chạy mỗi 5 phút (:00, :05, :10, :15, ...)
+  'scan-rsi-every-30min-morning',  -- Tên job
+  '*/10 * * * *',                  -- Chạy mỗi 10 phút (:00, :10, :20, :30, :40, :50)
   $$
   SELECT
     net.http_post(
@@ -24,7 +27,7 @@ SELECT cron.schedule(
 );
 
 -- Kiểm tra job đã được tạo chưa
-SELECT * FROM cron.job WHERE jobname = 'scan-rsi-every-5min';
+SELECT * FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning';
 
 -- Xem lịch sử chạy (20 lần gần nhất)
 SELECT 
@@ -39,7 +42,7 @@ SELECT
   start_time,
   end_time
 FROM cron.job_run_details 
-WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-5min')
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'scan-rsi-every-30min-morning')
 ORDER BY start_time DESC 
 LIMIT 20;
 

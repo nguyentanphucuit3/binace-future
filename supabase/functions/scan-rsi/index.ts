@@ -1,5 +1,6 @@
-// Supabase Edge Function to auto scan RSI every 5 minutes
-// Runs 24/7 at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55 minutes (at :05 seconds)
+// Supabase Edge Function to auto scan RSI
+// Runs from 5:50 AM to 11:50 AM Vietnam time, every 30 minutes
+// Schedule: 5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -47,31 +48,33 @@ function getVietnamTime(): Date {
   return new Date(now.toLocaleString("en-US", { timeZone: TIMEZONE }));
 }
 
-// Check if current time is on a 5-minute interval
-// No time window restriction - runs 24/7
+// Check if current time is within scan window
+// Runs from 5:50 AM to 11:50 AM Vietnam time, every 30 minutes
+// Times: 5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50
 function isWithinScanWindow(): boolean {
   const vietnamTime = getVietnamTimeInfo();
+  const hour = vietnamTime.hour;
   const minute = vietnamTime.minute;
   
-  // Only run at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55 minutes
-  const isOn5MinuteInterval = minute % 5 === 0;
-  
-  return isOn5MinuteInterval;
-}
-
-// Wait until :05 seconds
-async function waitUntil5Seconds(): Promise<void> {
-  const vietnamTime = getVietnamTimeInfo();
-  const seconds = vietnamTime.second;
-  
-  if (seconds < 5) {
-    const waitMs = (5 - seconds) * 1000;
-    await new Promise(resolve => setTimeout(resolve, waitMs));
-  } else if (seconds > 5) {
-    // If we're past :05, wait until next :05 (next minute)
-    const waitMs = (60 - seconds + 5) * 1000;
-    await new Promise(resolve => setTimeout(resolve, waitMs));
+  // Check if within time window (5:50 to 11:50)
+  if (hour < 5 || (hour === 5 && minute < 50)) {
+    return false; // Before 5:50
   }
+  if (hour >= 12) {
+    return false; // After 12:00
+  }
+  
+  // Only run at specific minutes:
+  // - :50 of hours 5-11
+  // - :20 of hours 6-11
+  if (minute === 50) {
+    return hour >= 5 && hour <= 11;
+  }
+  if (minute === 20) {
+    return hour >= 6 && hour <= 11;
+  }
+  
+  return false;
 }
 
 // Format Vietnam time (kept for compatibility, but using getVietnamTimeInfo is preferred)
@@ -104,11 +107,11 @@ Deno.serve(async (req: Request) => {
     if (!isWithinWindow) {
       console.log(`[Auto Scan] Outside scan window, skipping scan`);
       console.log(`[Auto Scan] Current time: ${vietnamTimeInfo.hour}:${vietnamTimeInfo.minute.toString().padStart(2, '0')}:${vietnamTimeInfo.second.toString().padStart(2, '0')}`);
-      console.log(`[Auto Scan] Will run at next 5-minute interval (:00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55)`);
+      console.log(`[Auto Scan] Scan window: 5:50 - 11:50 VN time, every 30 minutes (5:50, 6:20, 6:50, 7:20, 7:50, 8:20, 8:50, 9:20, 9:50, 10:20, 10:50, 11:20, 11:50)`);
       return new Response(
         JSON.stringify({
           success: false,
-          message: `Not on 5-minute interval. Current Vietnam time: ${vietnamTimeInfo.formatted}. Scan only runs at :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55 minutes.`,
+          message: `Outside scan window. Current Vietnam time: ${vietnamTimeInfo.formatted}. Scan runs from 5:50 to 11:50 VN time, every 30 minutes.`,
         }),
         {
           headers: { "Content-Type": "application/json" },
@@ -118,18 +121,6 @@ Deno.serve(async (req: Request) => {
     }
     
     console.log(`[Auto Scan] ✅ Within scan window, proceeding with scan`);
-    
-    // If we're in the right minute but not at :05 seconds yet, wait
-    if (vietnamTimeInfo.second < 5) {
-      console.log(`[Auto Scan] Waiting until :05 seconds (current: ${vietnamTimeInfo.second})`);
-      await waitUntil5Seconds();
-    } else if (vietnamTimeInfo.second > 5) {
-      // If we're past :05, we're too late for this interval
-      // But since cron runs every 5 minutes, we should still proceed
-      console.log(`[Auto Scan] Past :05 seconds (current: ${vietnamTimeInfo.second}), but proceeding anyway`);
-    } else {
-      console.log(`[Auto Scan] Already at :05 seconds, proceeding immediately`);
-    }
 
     // Get environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
