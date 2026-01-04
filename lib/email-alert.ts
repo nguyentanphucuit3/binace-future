@@ -63,3 +63,4 @@ export async function checkAndSendAlertEmail(coins: CoinRSI[]): Promise<{
   }
 }
 
+
