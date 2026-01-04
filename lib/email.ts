@@ -82,7 +82,7 @@ export async function sendAlertNotification({
   scanTime: string;
 }) {
   // Get list of admin emails (comma-separated or default)
-  const adminEmailDefault = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'hi.lienminhceo@gmail.com';
+  const adminEmailDefault = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
   const additionalEmails = ['hi.lienminhceo@gmail.com', 'hanhpham.hlg@gmail.com'];
   
   // Combine all email addresses (remove duplicates)
