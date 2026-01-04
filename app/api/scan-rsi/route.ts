@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { scanRSI } from "@/app/actions/binance";
 import { saveScanHistory, deleteOldHistory } from "@/app/actions/history";
+import { checkAndSendAlertEmail } from "@/lib/email-alert";
 
 const TIMEZONE = "Asia/Ho_Chi_Minh";
 
@@ -38,6 +39,14 @@ export async function POST(request?: Request) {
         { status: 400 }
       );
     }
+
+    // Check for alerts and send email notification FIRST (before filtering)
+    // Check on ALL scanned coins - alerts can trigger even if RSI < 70 (though green alert needs RSI >= 70)
+    console.log(`[API] 📊 Alert check: Total coins scanned: ${result.coins.length}, Checking for alerts...`);
+    console.log(`[API] 📧 SMTP Config - HOST: ${process.env.SMTP_HOST || 'smtp.gmail.com'}, USER: ${process.env.SMTP_USER ? '✅ Set' : '❌ Missing'}, PASS: ${process.env.SMTP_PASS ? '✅ Set' : '❌ Missing'}`);
+    console.log(`[API] 📧 ADMIN_EMAIL: ${process.env.ADMIN_EMAIL || 'Using SMTP_USER or default'}`);
+    
+    await checkAndSendAlertEmail(result.coins);
 
     // Filter coins with RSI >= 70
     const filtered = result.coins.filter((coin) => coin.rsi >= 70 && coin.rsi <= 100);

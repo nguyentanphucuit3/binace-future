@@ -575,7 +575,7 @@ export default function Home() {
             onAlertFilterChange={handleAlertFilterChange}
             onCopySymbol={copySymbol}
           />
-        )}
+              )}
 
         {/* BTC Result */}
         {btcCoin && (

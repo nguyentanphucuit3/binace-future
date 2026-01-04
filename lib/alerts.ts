@@ -16,8 +16,9 @@ export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | null
     return 'yellow';
   }
 
-  // Báo động Xanh: Funding Rate >= 0.0005 (0.05%)
-  if (fundingRate >= 0.0005) {
+  // Báo động Xanh: RSI >= 70 AND Funding Rate >= 0.0005 (0.05%)
+  // (Nhưng không phải Đỏ hoặc Vàng)
+  if (coin.rsi >= 70 && fundingRate >= 0.0005) {
     return 'green';
   }
 

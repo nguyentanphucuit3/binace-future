@@ -9,6 +9,7 @@ import {
   fetchFundingRate,
   type CoinRSI,
 } from "@/lib/binance";
+import { checkAndSendAlertEmail } from "@/lib/email-alert";
 
 /**
  * Server Action to scan RSI for all USDT perpetual futures pairs
@@ -121,8 +122,19 @@ export async function scanRSI(): Promise<{
     }
 
     // Sort by RSI descending
+    const sortedCoins = results.sort((a, b) => b.rsi - a.rsi);
+
+    // Check for alerts and send email notification (async, don't wait)
+    // Only send email if we have coins
+    if (sortedCoins.length > 0) {
+      checkAndSendAlertEmail(sortedCoins).catch((error) => {
+        // Log error but don't fail the scan
+        console.error("[scanRSI] Error sending alert email:", error);
+      });
+    }
+
     return {
-      coins: results.sort((a, b) => b.rsi - a.rsi),
+      coins: sortedCoins,
       dataTime,
       klinesData,
     };

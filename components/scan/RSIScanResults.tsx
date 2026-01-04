@@ -106,7 +106,7 @@ export function RSIScanResults({
                           ? 'Không có coin nào có RSI 85-100 VÀ Funding Rate ≥ 0.05%'
                           : alertFilter === 'yellow'
                           ? 'Không có coin nào có RSI 75-79 VÀ Funding Rate ≥ 0.05%'
-                          : 'Không có coin nào có Funding Rate ≥ 0.05%'}
+                          : 'Không có coin nào có RSI ≥ 70 VÀ Funding Rate ≥ 0.05%'}
                       </span>
                     </div>
                   </TableCell>
