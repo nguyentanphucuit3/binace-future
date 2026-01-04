@@ -151,8 +151,7 @@ export async function sendAlertNotification({
           ${hasYellow && !hasRed ? 'background: #fef3c7; color: #92400e; border-left: 4px solid #d97706;' : ''}
           ${hasGreen && !hasRed && !hasYellow ? 'background: #dcfce7; color: #15803d; border-left: 4px solid #16a34a;' : ''}
         }
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; }
-        .coins-table { width: 100%; min-width: 600px; border-collapse: collapse; }
+        .coins-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .coins-table th { background: #f9fafb; padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600; }
         .coins-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
         .coins-table tr:hover { background: #f9fafb; }
@@ -190,7 +189,6 @@ export async function sendAlertNotification({
           ${hasRed ? `
           <div class="alert-section">
             <div class="alert-title">🔴 Báo động Đỏ (RSI 85-100 VÀ Funding Rate ≥ 0.05%)</div>
-            <div class="table-wrapper">
             <table class="coins-table">
               <thead>
                 <tr>
@@ -211,14 +209,12 @@ export async function sendAlertNotification({
                 `).join('')}
               </tbody>
             </table>
-            </div>
           </div>
           ` : ''}
 
           ${hasYellow ? `
           <div class="alert-section">
             <div class="alert-title">🟡 Báo động Vàng (RSI 75-79 VÀ Funding Rate ≥ 0.05%)</div>
-            <div class="table-wrapper">
             <table class="coins-table">
               <thead>
                 <tr>
@@ -239,14 +235,12 @@ export async function sendAlertNotification({
                 `).join('')}
               </tbody>
             </table>
-            </div>
           </div>
           ` : ''}
 
           ${hasGreen ? `
           <div class="alert-section">
             <div class="alert-title">🟢 Báo động Xanh (RSI ≥ 70 VÀ Funding Rate ≥ 0.05%)</div>
-            <div class="table-wrapper">
             <table class="coins-table">
               <thead>
                 <tr>
@@ -267,7 +261,6 @@ export async function sendAlertNotification({
                 `).join('')}
               </tbody>
             </table>
-            </div>
           </div>
           ` : ''}
 
