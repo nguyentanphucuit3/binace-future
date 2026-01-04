@@ -138,7 +138,7 @@ export async function sendAlertNotification({
           padding: 30px; 
           text-align: center; 
         }
-        .content { padding: 30px; }
+        .content { padding: 10px; }
         .scan-time { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
         .alert-section { margin: 30px 0; }
         .alert-title { 
@@ -150,6 +150,26 @@ export async function sendAlertNotification({
           ${hasRed ? 'background: #fee2e2; color: #991b1b; border-left: 4px solid #dc2626;' : ''}
           ${hasYellow && !hasRed ? 'background: #fef3c7; color: #92400e; border-left: 4px solid #d97706;' : ''}
           ${hasGreen && !hasRed && !hasYellow ? 'background: #dcfce7; color: #15803d; border-left: 4px solid #16a34a;' : ''}
+        }
+        .alert-title-red {
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 15px;
+          padding: 12px;
+          border-radius: 8px;
+          background: #fee2e2;
+          color: #991b1b;
+          border-left: 4px solid #dc2626;
+        }
+        .alert-title-green {
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 15px;
+          padding: 12px;
+          border-radius: 8px;
+          background: #dcfce7;
+          color: #15803d;
+          border-left: 4px solid #16a34a;
         }
         .coins-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .coins-table th { background: #f9fafb; padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600; }
@@ -188,7 +208,7 @@ export async function sendAlertNotification({
 
           ${hasRed ? `
           <div class="alert-section">
-            <div class="alert-title">🔴 Báo động Đỏ (RSI 85-100 VÀ Funding Rate ≥ 0.05%)</div>
+            <div class="alert-title-red">🔴 Báo động Đỏ (RSI 85-100 VÀ Funding Rate ≥ 0.05%)</div>
             <table class="coins-table">
               <thead>
                 <tr>
@@ -240,7 +260,7 @@ export async function sendAlertNotification({
 
           ${hasGreen ? `
           <div class="alert-section">
-            <div class="alert-title">🟢 Báo động Xanh (RSI ≥ 70 VÀ Funding Rate ≥ 0.05%)</div>
+            <div class="alert-title-green">🟢 Báo động Xanh (RSI ≥ 70 VÀ Funding Rate ≥ 0.05%)</div>
             <table class="coins-table">
               <thead>
                 <tr>
