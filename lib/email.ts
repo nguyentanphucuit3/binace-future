@@ -131,14 +131,14 @@ export async function sendAlertNotification({
       <meta charset="utf-8">
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: full; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header { 
           background: ${hasRed ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' : hasYellow ? 'linear-gradient(135deg, #d97706 0%, #92400e 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'}; 
           color: white; 
           padding: 30px; 
           text-align: center; 
         }
-        .content { padding: 10px; }
+        .content { padding: 0px; }
         .scan-time { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
         .alert-section { margin: 30px 0; }
         .alert-title { 
