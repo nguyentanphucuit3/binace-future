@@ -71,7 +71,7 @@ export async function sendEmail({
 }
 
 interface AlertCoin extends CoinRSI {
-  alertStatus: 'red' | 'yellow' | 'green';
+  alertStatus: 'red' | 'yellow' | 'green' | 'pink' | 'black';
 }
 
 export async function sendAlertNotification({
@@ -96,15 +96,23 @@ export async function sendAlertNotification({
   const redCoins = alertCoins.filter(c => c.alertStatus === 'red');
   const yellowCoins = alertCoins.filter(c => c.alertStatus === 'yellow');
   const greenCoins = alertCoins.filter(c => c.alertStatus === 'green');
+  const blackCoins = alertCoins.filter(c => c.alertStatus === 'black');
+  const pinkCoins = alertCoins.filter(c => c.alertStatus === 'pink');
 
   const hasRed = redCoins.length > 0;
   const hasYellow = yellowCoins.length > 0;
   const hasGreen = greenCoins.length > 0;
+  const hasBlack = blackCoins.length > 0;
+  const hasPink = pinkCoins.length > 0;
 
   // Determine subject and priority
   let subject = '🔔 ';
   if (hasRed) {
     subject += `[🔴 BÁO ĐỘNG ĐỎ] ${redCoins.length} coin`;
+  } else if (hasBlack) {
+    subject += `[⚫ BÁO ĐỘNG ĐEN] ${blackCoins.length} coin`;
+  } else if (hasPink) {
+    subject += `[♦️ BÁO ĐỘNG HỒNG] ${pinkCoins.length} coin`;
   } else if (hasYellow) {
     subject += `[🟡 BÁO ĐỘNG VÀNG] ${yellowCoins.length} coin`;
   } else if (hasGreen) {
@@ -133,7 +141,7 @@ export async function sendAlertNotification({
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; background: #f5f5f5; }
         .container { max-width: full; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header { 
-          background: ${hasRed ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' : hasYellow ? 'linear-gradient(135deg, #d97706 0%, #92400e 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'}; 
+          background: ${hasRed ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' : hasBlack ? 'linear-gradient(135deg, #000 0%, #374151 100%)' : hasPink ? 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' : hasYellow ? 'linear-gradient(135deg, #d97706 0%, #92400e 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'}; 
           color: white; 
           padding: 30px; 
           text-align: center; 
@@ -192,7 +200,7 @@ export async function sendAlertNotification({
     <body>
       <div class="container">
         <div class="header">
-          <h1>${hasRed ? '🔴 BÁO ĐỘNG ĐỎ' : hasYellow ? '🟡 BÁO ĐỘNG VÀNG' : '🟢 BÁO ĐỘNG XANH'}</h1>
+          <h1>${hasRed ? '🔴 BÁO ĐỘNG ĐỎ' : hasBlack ? '⚫ BÁO ĐỘNG ĐEN' : hasPink ? '♦️ BÁO ĐỘNG HỒNG' : hasYellow ? '🟡 BÁO ĐỘNG VÀNG' : '🟢 BÁO ĐỘNG XANH'}</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Binance Futures RSI Scan Alert</p>
         </div>
         <div class="content">
@@ -202,6 +210,8 @@ export async function sendAlertNotification({
 
           <div class="summary">
             ${hasRed ? `<div class="summary-item"><div class="summary-label">🔴 Báo động Đỏ</div><div class="summary-value summary-red">${redCoins.length}</div></div>` : ''}
+            ${hasBlack ? `<div class="summary-item"><div class="summary-label">⚫ Báo động Đen</div><div class="summary-value" style="color: #000;">${blackCoins.length}</div></div>` : ''}
+            ${hasPink ? `<div class="summary-item"><div class="summary-label">♦️ Báo động Hồng</div><div class="summary-value" style="color: #ec4899;">${pinkCoins.length}</div></div>` : ''}
             ${hasYellow ? `<div class="summary-item"><div class="summary-label">🟡 Báo động Vàng</div><div class="summary-value summary-yellow">${yellowCoins.length}</div></div>` : ''}
             ${hasGreen ? `<div class="summary-item"><div class="summary-label">🟢 Báo động Xanh</div><div class="summary-value summary-green">${greenCoins.length}</div></div>` : ''}
           </div>
@@ -272,6 +282,58 @@ export async function sendAlertNotification({
               </thead>
               <tbody>
                 ${greenCoins.map(coin => `
+                  <tr>
+                    <td class="symbol">${coin.symbol}</td>
+                    <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
+                    <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
+                    <td style="text-align: right;">$${formatPrice(coin.price)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          ${hasBlack ? `
+          <div class="alert-section">
+            <div class="alert-title" style="background: #f3f4f6; color: #000; border-left: 4px solid #000;">⚫ Báo động Đen (RSI ≥ 70 và Funding Rate từ -2 đến -1.8)</div>
+            <table class="coins-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th style="text-align: right;">RSI</th>
+                  <th style="text-align: right;">Funding Rate</th>
+                  <th style="text-align: right;">Giá (USDT)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${blackCoins.map(coin => `
+                  <tr>
+                    <td class="symbol">${coin.symbol}</td>
+                    <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
+                    <td style="text-align: right;" class="funding-negative">${formatFundingRate(coin.fundingRate)}</td>
+                    <td style="text-align: right;">$${formatPrice(coin.price)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          ${hasPink ? `
+          <div class="alert-section">
+            <div class="alert-title" style="background: #fce7f3; color: #be185d; border-left: 4px solid #ec4899;">♦️ Báo động Hồng (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</div>
+            <table class="coins-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th style="text-align: right;">RSI</th>
+                  <th style="text-align: right;">Funding Rate</th>
+                  <th style="text-align: right;">Giá (USDT)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pinkCoins.map(coin => `
                   <tr>
                     <td class="symbol">${coin.symbol}</td>
                     <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>

@@ -28,7 +28,7 @@ export async function checkAndSendAlertEmail(coins: CoinRSI[]): Promise<{
 }> {
   try {
     // Check for alerts on all coins
-    const alertCoins: Array<CoinRSI & { alertStatus: 'red' | 'yellow' | 'green' }> = [];
+    const alertCoins: Array<CoinRSI & { alertStatus: 'red' | 'yellow' | 'green' | 'pink' | 'black' }> = [];
     for (const coin of coins) {
       const alertStatus = getAlertStatus(coin);
       if (alertStatus) {
