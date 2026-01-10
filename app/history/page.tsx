@@ -64,7 +64,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | null>(null);
+  const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | 'black' | 'pink' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
@@ -97,7 +97,7 @@ export default function HistoryPage() {
   };
 
   // Check alert status for a coin
-  const getAlertStatus = (coin: SimpleCoinData): 'red' | 'yellow' | 'green' | null => {
+  const getAlertStatus = (coin: SimpleCoinData): 'red' | 'yellow' | 'green' | 'black' | 'pink' | null => {
     const fundingRate = coin.fundingRate ?? 0;
     
     // Báo động Đỏ: RSI 85-100 AND Funding Rate >= 0.0005 (0.05%)
@@ -105,13 +105,25 @@ export default function HistoryPage() {
       return 'red';
     }
     
+    // Báo động Đen: RSI >= 70 AND Funding Rate từ -2 đến -1.8
+    if (coin.rsi >= 70 && fundingRate >= -2 && fundingRate <= -1.8) {
+      return 'black';
+    }
+    
+    // Báo động Hồng: isShortSignal === true AND RSI 70-79 AND Funding Rate >= 0.0005 (0.05%)
+    if (coin.isShortSignal === true && coin.rsi >= 70 && coin.rsi <= 79 && fundingRate >= 0.0005) {
+      return 'pink';
+    }
+    
     // Báo động Vàng: RSI 75-79 AND Funding Rate >= 0.0005 (0.05%)
+    // (Nhưng không phải Hồng - vì Hồng đã được kiểm tra trước)
     if (coin.rsi >= 75 && coin.rsi <= 79 && fundingRate >= 0.0005) {
       return 'yellow';
     }
     
-    // Báo động Xanh: Funding Rate >= 0.0005 (0.05%)
-    if (fundingRate >= 0.0005) {
+    // Báo động Xanh: RSI >= 70 AND Funding Rate >= 0.0005 (0.05%)
+    // (Nhưng không phải Đỏ, Đen, Vàng, hoặc Hồng)
+    if (coin.rsi >= 70 && fundingRate >= 0.0005) {
       return 'green';
     }
     
@@ -126,6 +138,10 @@ export default function HistoryPage() {
       return coins.filter((coin) => getAlertStatus(coin) === 'yellow');
     } else if (alertFilter === 'green') {
       return coins.filter((coin) => getAlertStatus(coin) === 'green');
+    } else if (alertFilter === 'black') {
+      return coins.filter((coin) => getAlertStatus(coin) === 'black');
+    } else if (alertFilter === 'pink') {
+      return coins.filter((coin) => getAlertStatus(coin) === 'pink');
     }
     
     return coins;
@@ -204,7 +220,13 @@ export default function HistoryPage() {
                   <div>
                     <CardTitle>
                       Tổng quan lịch sử ({alertFilter === null ? history.length : filteredHistory.length} lần quét
-                      {alertFilter !== null && ` - ${alertFilter === 'red' ? '🔴 Báo động đỏ' : alertFilter === 'yellow' ? '🟡 Báo động vàng' : '🟢 Báo động xanh'}`})
+                      {alertFilter !== null && ` - ${
+                        alertFilter === 'red' ? '🔴 Báo động đỏ' 
+                        : alertFilter === 'yellow' ? '🟡 Báo động vàng' 
+                        : alertFilter === 'green' ? '🟢 Báo động xanh'
+                        : alertFilter === 'black' ? '⚫ Báo động đen'
+                        : '♦️ Báo động hồng'
+                      }`})
                     </CardTitle>
                     <CardDescription className="mt-1">
                       Danh sách các lần quét RSI, nhấn vào một dòng để xem chi tiết
@@ -248,11 +270,37 @@ export default function HistoryPage() {
                       >
                         🟢 Báo động xanh
                       </Button>
+                      <Button
+                        variant={alertFilter === 'black' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setAlertFilter(alertFilter === 'black' ? null : 'black');
+                          setCurrentPage(1); // Reset to page 1 when filter changes
+                          setExpandedId(null); // Close expanded row when filter changes
+                        }}
+                        className={alertFilter === 'black' ? "bg-black hover:bg-gray-900 text-white" : "border-black text-black"}
+                      >
+                        ⚫ Báo động đen
+                      </Button>
+                      <Button
+                        variant={alertFilter === 'pink' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setAlertFilter(alertFilter === 'pink' ? null : 'pink');
+                          setCurrentPage(1); // Reset to page 1 when filter changes
+                          setExpandedId(null); // Close expanded row when filter changes
+                        }}
+                        className={alertFilter === 'pink' ? "bg-pink-600 hover:bg-pink-700 text-white" : "border-pink-600 text-pink-600"}
+                      >
+                        ♦️ Báo động hồng
+                      </Button>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
                       <div>🔴 <strong>Báo động đỏ:</strong> RSI 85-100 và Funding Rate ≥ 0.05% (0.0005)</div>
                       <div>🟡 <strong>Báo động vàng:</strong> RSI 75-79 và Funding Rate ≥ 0.05% (0.0005)</div>
-                      <div>🟢 <strong>Báo động xanh:</strong> Funding Rate ≥ 0.05% (0.0005)</div>
+                      <div>🟢 <strong>Báo động xanh:</strong> RSI ≥ 70 và Funding Rate ≥ 0.05% (0.0005)</div>
+                      <div>⚫ <strong>Báo động đen:</strong> RSI ≥ 70 và Funding Rate từ -2 đến -1.8</div>
+                      <div>♦️ <strong>Báo động hồng:</strong> (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</div>
                     </div>
                   </div>
                 </div>
@@ -269,7 +317,11 @@ export default function HistoryPage() {
                           <span className="sm:hidden">Cặp</span>
                           {alertFilter !== null && (
                             <span className="ml-1 text-xs">
-                              {alertFilter === 'red' ? '(🔴 Đỏ)' : alertFilter === 'yellow' ? '(🟡 Vàng)' : '(🟢 Xanh)'}
+                              {alertFilter === 'red' ? '(🔴 Đỏ)' 
+                                : alertFilter === 'yellow' ? '(🟡 Vàng)' 
+                                : alertFilter === 'green' ? '(🟢 Xanh)'
+                                : alertFilter === 'black' ? '(⚫ Đen)'
+                                : '(♦️ Hồng)'}
                             </span>
                           )}
                         </TableHead>
@@ -297,7 +349,11 @@ export default function HistoryPage() {
                                   <>
                                     <span>{item.filtered_coins.length}</span>
                                     <span className="ml-1 text-xs text-muted-foreground block sm:inline">
-                                      ({alertFilter === 'red' ? '🔴 Đỏ' : alertFilter === 'yellow' ? '🟡 Vàng' : '🟢 Xanh'})
+                                      ({alertFilter === 'red' ? '🔴 Đỏ' 
+                                        : alertFilter === 'yellow' ? '🟡 Vàng' 
+                                        : alertFilter === 'green' ? '🟢 Xanh'
+                                        : alertFilter === 'black' ? '⚫ Đen'
+                                        : '♦️ Hồng'})
                                     </span>
                                   </>
                                 ) : null}
@@ -345,7 +401,11 @@ export default function HistoryPage() {
                                     <span className="block sm:inline">Chi tiết lần quét</span>
                                     {alertFilter !== null && (
                                       <span className="block sm:inline sm:ml-2 text-sm text-muted-foreground">
-                                        ({alertFilter === 'red' ? '🔴 Báo động đỏ' : alertFilter === 'yellow' ? '🟡 Báo động vàng' : '🟢 Báo động xanh'}: {currentHistory.filtered_coins.length} cặp)
+                                        ({alertFilter === 'red' ? '🔴 Báo động đỏ' 
+                                          : alertFilter === 'yellow' ? '🟡 Báo động vàng' 
+                                          : alertFilter === 'green' ? '🟢 Báo động xanh'
+                                          : alertFilter === 'black' ? '⚫ Báo động đen'
+                                          : '♦️ Báo động hồng'}: {currentHistory.filtered_coins.length} cặp)
                                       </span>
                                     )}
                                   </h3>
@@ -358,7 +418,7 @@ export default function HistoryPage() {
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">RSI (14)</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Funding</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-10">Giá (USDT)</TableHead>
-                                          <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Hiệu giá</TableHead>
+                                          <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Nến</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-20">Time</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-24">Ngày</TableHead>
                                           <TableHead className="text-center whitespace-nowrap px-1 text-[14px] w-20">Alert</TableHead>
@@ -375,6 +435,10 @@ export default function HistoryPage() {
                                             ? 'bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-l-yellow-500'
                                             : alertStatus === 'green'
                                             ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500'
+                                            : alertStatus === 'black'
+                                            ? 'bg-black/5 dark:bg-black/30 border-l-4 border-l-black'
+                                            : alertStatus === 'pink'
+                                            ? 'bg-pink-50 dark:bg-pink-950/20 border-l-4 border-l-pink-500'
                                             : '';
                                           
                                           return (
@@ -456,6 +520,14 @@ export default function HistoryPage() {
                                                 ) : alertStatus === 'green' ? (
                                                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-600 text-white">
                                                     🟢 XANH
+                                                  </span>
+                                                ) : alertStatus === 'black' ? (
+                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-black text-white dark:bg-gray-900">
+                                                    ⚫ ĐEN
+                                                  </span>
+                                                ) : alertStatus === 'pink' ? (
+                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-pink-600 text-white dark:bg-pink-700">
+                                                    ♦️ HỒNG
                                                   </span>
                                                 ) : (
                                                   <span className="text-muted-foreground text-xs">-</span>

@@ -20,12 +20,12 @@ interface RSIScanResultsProps {
   coins: CoinRSI[];
   filteredCoins: CoinRSI[];
   selectedRSI: string | null;
-  alertFilter: 'red' | 'yellow' | 'green' | null;
+  alertFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null;
   lastScanTime: string | null;
   scanDuration: number | null;
   currentPage: number;
   onPageChange: (page: number) => void;
-  onAlertFilterChange: (filter: 'red' | 'yellow' | 'green' | null, filteredCoins: CoinRSI[]) => void;
+  onAlertFilterChange: (filter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null, filteredCoins: CoinRSI[]) => void;
   onCopySymbol: (symbol: string) => void;
 }
 
@@ -53,7 +53,7 @@ export function RSIScanResults({
           Kết quả ({filteredCoins.length} / {coins.length} cặp)
           {alertFilter !== null && (
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {alertFilter === 'red' ? '(🔴 Báo động đỏ)' : alertFilter === 'yellow' ? '(🟡 Báo động vàng)' : '(🟢 Báo động xanh)'}
+              {alertFilter === 'red' ? '(🔴 Báo động đỏ)' : alertFilter === 'yellow' ? '(🟡 Báo động vàng)' : alertFilter === 'green' ? '(🟢 Báo động xanh)' : alertFilter === 'black' ? '(⚫ Báo động đen)' : '(♦️ Báo động hồng)'}
             </span>
           )}
         </CardTitle>
@@ -79,7 +79,7 @@ export function RSIScanResults({
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-x-auto">
-          <Table className="min-w-[700px]">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
@@ -88,26 +88,35 @@ export function RSIScanResults({
                 <TableHead className="text-right">Funding</TableHead>
                 <TableHead className="text-right">Giá (USDT)</TableHead>
                 <TableHead className="text-right">Thay đổi 24h</TableHead>
-                <TableHead className="text-right">Hiệu giá</TableHead>
+                <TableHead className="text-right">Nến</TableHead>
+                <TableHead className="text-center">Alert</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCoins.length === 0 && alertFilter !== null ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-lg">
-                        {alertFilter === 'red' ? '🔴' : alertFilter === 'yellow' ? '🟡' : '🟢'}
+                        {alertFilter === 'red' ? '🔴' : alertFilter === 'yellow' ? '🟡' : alertFilter === 'green' ? '🟢' : alertFilter === 'black' ? '⚫' : '♦️'}
                       </span>
                       <span className="font-medium">
-                        Không có báo động {alertFilter === 'red' ? 'đỏ' : alertFilter === 'yellow' ? 'vàng' : 'xanh'}
+                        {alertFilter === 'pink' 
+                          ? 'Không có báo động hồng'
+                          : alertFilter === 'black'
+                          ? 'Không có báo động đen'
+                          : `Không có báo động ${alertFilter === 'red' ? 'đỏ' : alertFilter === 'yellow' ? 'vàng' : 'xanh'}`}
                       </span>
                       <span className="text-sm">
                         {alertFilter === 'red' 
                           ? 'Không có coin nào có RSI 85-100 VÀ Funding Rate ≥ 0.05%'
                           : alertFilter === 'yellow'
                           ? 'Không có coin nào có RSI 75-79 VÀ Funding Rate ≥ 0.05%'
-                          : 'Không có coin nào có RSI ≥ 70 VÀ Funding Rate ≥ 0.05%'}
+                          : alertFilter === 'green'
+                          ? 'Không có coin nào có RSI ≥ 70 VÀ Funding Rate ≥ 0.05%'
+                          : alertFilter === 'black'
+                          ? 'Không có coin nào có RSI ≥ 70 và Funding Rate từ -2 đến -1.8'
+                          : 'Không có coin nào có (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%'}
                       </span>
                     </div>
                   </TableCell>

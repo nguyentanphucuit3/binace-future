@@ -32,7 +32,7 @@ export default function Home() {
   const [coins, setCoins] = useState<CoinRSI[]>([]);
   const [filteredCoins, setFilteredCoins] = useState<CoinRSI[]>([]);
   const [selectedRSI, setSelectedRSI] = useState<string | null>(null);
-  const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | null>(null);
+  const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | 'pink' | 'black' | null>(null);
   const [isPending, startTransition] = useTransition();
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [fundingTimeRemaining, setFundingTimeRemaining] = useState<number>(0);
@@ -71,6 +71,7 @@ export default function Home() {
           price: number;
           fundingRate?: number;
           priceDifference?: number;
+          isShortSignal?: boolean;
         };
         
         type SavedScanData = {
@@ -91,6 +92,7 @@ export default function Home() {
             change24h: 0, // Không lưu change24h để giảm dung lượng
             fundingRate: c.fundingRate,
             priceDifference: c.priceDifference,
+            isShortSignal: c.isShortSignal,
           }));
           const restoredFiltered: CoinRSI[] = (parsed.filteredCoins || []).map((c: SavedCoinData) => ({
             symbol: c.symbol,
@@ -99,6 +101,7 @@ export default function Home() {
             change24h: 0,
             fundingRate: c.fundingRate,
             priceDifference: c.priceDifference,
+            isShortSignal: c.isShortSignal,
           }));
           
           setCoins(restoredCoins);
@@ -278,7 +281,7 @@ export default function Home() {
     }
   };
 
-  const handleAlertFilterChange = (newFilter: 'red' | 'yellow' | 'green' | null, filteredCoins: CoinRSI[]) => {
+  const handleAlertFilterChange = (newFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null, filteredCoins: CoinRSI[]) => {
     setAlertFilter(newFilter);
     updateFilteredCoins(filteredCoins);
     setCurrentPage(1);
@@ -323,13 +326,14 @@ export default function Home() {
           // Xóa data cũ trước
           sessionStorage.removeItem(SCAN_DATA_KEY);
           
-          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate, priceDifference
+          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate, priceDifference, isShortSignal
           const minimalCoins = result.coins.map((coin) => ({
             symbol: coin.symbol,
             rsi: coin.rsi,
             price: coin.price,
             fundingRate: coin.fundingRate,
             priceDifference: coin.priceDifference,
+            isShortSignal: coin.isShortSignal,
           }));
           const minimalFiltered = filtered.map((coin) => ({
             symbol: coin.symbol,
@@ -337,6 +341,7 @@ export default function Home() {
             price: coin.price,
             fundingRate: coin.fundingRate,
             priceDifference: coin.priceDifference,
+            isShortSignal: coin.isShortSignal,
           }));
           
           // Lưu data mới (ghi đè lên data cũ nếu có)
@@ -358,6 +363,7 @@ export default function Home() {
               price: coin.price,
               fundingRate: coin.fundingRate,
               priceDifference: coin.priceDifference,
+              isShortSignal: coin.isShortSignal,
             }));
             const minimalFiltered = filtered.slice(0, 100).map((coin) => ({
               symbol: coin.symbol,
@@ -365,6 +371,7 @@ export default function Home() {
               price: coin.price,
               fundingRate: coin.fundingRate,
               priceDifference: coin.priceDifference,
+              isShortSignal: coin.isShortSignal,
             }));
             sessionStorage.setItem(SCAN_DATA_KEY, JSON.stringify({
               coins: minimalCoins,
@@ -378,13 +385,14 @@ export default function Home() {
         }
       }
       
-      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate, priceDifference
+      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate, priceDifference, isShortSignal
       const coinsToSave = filtered.map((coin) => ({
         symbol: coin.symbol,
         rsi: coin.rsi,
         price: coin.price,
         fundingRate: coin.fundingRate,
         priceDifference: coin.priceDifference,
+        isShortSignal: coin.isShortSignal,
       }));
       
       await saveScanHistory({

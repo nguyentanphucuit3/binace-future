@@ -22,6 +22,10 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
     ? 'bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-l-yellow-500'
     : alertStatus === 'green'
     ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500'
+    : alertStatus === 'black'
+    ? 'bg-black/5 dark:bg-black/30 border-l-4 border-l-black'
+    : alertStatus === 'pink'
+    ? 'bg-pink-50 dark:bg-pink-950/20 border-l-4 border-l-pink-500'
     : '';
 
   const handleCopy = () => {
@@ -110,6 +114,31 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
               </div>
             );
           })()
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        )}
+      </TableCell>
+      <TableCell className="text-center">
+        {alertStatus === 'red' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-600 text-white">
+            🔴 ĐỎ
+          </span>
+        ) : alertStatus === 'yellow' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500 text-white">
+            🟡 VÀNG
+          </span>
+        ) : alertStatus === 'green' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-600 text-white">
+            🟢 XANH
+          </span>
+        ) : alertStatus === 'black' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-black text-white dark:bg-gray-900">
+            ⚫ ĐEN
+          </span>
+        ) : alertStatus === 'pink' ? (
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-pink-600 text-white dark:bg-pink-700">
+            ♦️ HỒNG
+          </span>
         ) : (
           <span className="text-muted-foreground text-xs">-</span>
         )}

@@ -29,7 +29,7 @@ export const getFilterConfig = (filterKey: string): FilterButton | null => {
 /**
  * Apply alert filter to coins
  */
-export const applyAlertFilter = (coins: CoinRSI[], alertFilter: 'red' | 'yellow' | 'green' | null): CoinRSI[] => {
+export const applyAlertFilter = (coins: CoinRSI[], alertFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null): CoinRSI[] => {
   if (alertFilter === null) return coins;
   return coins.filter((coin) => getAlertStatus(coin) === alertFilter);
 };
@@ -40,7 +40,7 @@ export const applyAlertFilter = (coins: CoinRSI[], alertFilter: 'red' | 'yellow'
 export const applyFilters = (
   coins: CoinRSI[],
   selectedRSI: string | null,
-  alertFilter: 'red' | 'yellow' | 'green' | null
+  alertFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null
 ): CoinRSI[] => {
   let filtered = coins;
 

@@ -5,10 +5,10 @@ import { applyFilters } from "@/lib/filter-utils";
 import type { CoinRSI } from "@/lib/binance";
 
 interface AlertFilterButtonsProps {
-  alertFilter: 'red' | 'yellow' | 'green' | null;
+  alertFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null;
   selectedRSI: string | null;
   coins: CoinRSI[];
-  onFilterChange: (filter: 'red' | 'yellow' | 'green' | null, filteredCoins: CoinRSI[]) => void;
+  onFilterChange: (filter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null, filteredCoins: CoinRSI[]) => void;
 }
 
 export function AlertFilterButtons({
@@ -17,7 +17,7 @@ export function AlertFilterButtons({
   coins,
   onFilterChange,
 }: AlertFilterButtonsProps) {
-  const handleAlertFilterClick = (newFilter: 'red' | 'yellow' | 'green' | null) => {
+  const handleAlertFilterClick = (newFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null) => {
     const filtered = applyFilters(coins, selectedRSI, newFilter);
     onFilterChange(newFilter, filtered);
   };
@@ -49,6 +49,22 @@ export function AlertFilterButtons({
         >
           🟢 BÁO ĐỘNG XANH
         </Button>
+        <Button
+          variant={alertFilter === 'black' ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleAlertFilterClick(alertFilter === 'black' ? null : 'black')}
+          className={alertFilter === 'black' ? "bg-black hover:bg-gray-900 text-white" : "border-black text-black"}
+        >
+          ⚫ BÁO ĐỘNG ĐEN
+        </Button>
+        <Button
+          variant={alertFilter === 'pink' ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleAlertFilterClick(alertFilter === 'pink' ? null : 'pink')}
+          className={alertFilter === 'pink' ? "bg-pink-600 hover:bg-pink-700 text-white" : "border-pink-600 text-pink-600"}
+        >
+          ♦️ BÁO ĐỘNG HỒNG
+        </Button>
       </div>
       {/* Alert Notes */}
       {alertFilter !== null && (
@@ -57,8 +73,12 @@ export function AlertFilterButtons({
             <span>🔴 Báo động đỏ: RSI 85-100 VÀ Funding Rate ≥ 0.05%</span>
           ) : alertFilter === 'yellow' ? (
             <span>🟡 Báo động vàng: RSI 75-79 VÀ Funding Rate ≥ 0.05%</span>
-          ) : (
+          ) : alertFilter === 'green' ? (
             <span>🟢 Báo động xanh: RSI ≥ 70 VÀ Funding Rate ≥ 0.05%</span>
+          ) : alertFilter === 'black' ? (
+            <span>⚫ Báo động đen: RSI ≥ 70 và Funding Rate từ -2 đến -1.8</span>
+          ) : (
+            <span>♦️ Báo động hồng: (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</span>
           )}
         </div>
       )}

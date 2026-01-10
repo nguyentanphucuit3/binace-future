@@ -22,6 +22,7 @@ export interface CoinRSI {
   fundingRate?: number;
   nextFundingTime?: number;
   priceDifference?: number; // Hiệu số phần trăm: ((currentPrice - first1mPrice) / first1mPrice) * 100
+  isShortSignal?: boolean; // Tín hiệu SHORT từ checkShortSignal (nến đỏ + đã vượt band + giá dưới band)
 }
 
 /**
@@ -72,6 +73,218 @@ export function calculateRSI(closes: number[], period: number = 14): number | nu
   const rsi = 100 - 100 / (1 + rs);
 
   return Math.round(rsi * 100) / 100; // 2 decimals
+}
+
+/**
+ * Calculate Simple Moving Average (SMA)
+ * @param values Array of values
+ * @param period Period for SMA calculation
+ * @returns SMA value or null if insufficient data
+ */
+export function calculateSMA(values: number[], period: number): number | null {
+  if (!Array.isArray(values) || values.length < period) {
+    return null;
+  }
+  
+  const slice = values.slice(-period);
+  const sum = slice.reduce((acc, val) => acc + val, 0);
+  return sum / period;
+}
+
+/**
+ * Calculate Standard Deviation
+ * @param values Array of values
+ * @param period Period for calculation
+ * @param sma Optional pre-calculated SMA value
+ * @returns Standard deviation or null if insufficient data
+ */
+export function calculateStandardDeviation(values: number[], period: number, sma?: number): number | null {
+  if (!Array.isArray(values) || values.length < period) {
+    return null;
+  }
+  
+  const calculatedSMA = sma !== undefined ? sma : calculateSMA(values, period);
+  if (calculatedSMA === null) {
+    return null;
+  }
+  
+  const slice = values.slice(-period);
+  const variance = slice.reduce((acc, val) => {
+    const diff = val - calculatedSMA;
+    return acc + diff * diff;
+  }, 0) / period;
+  
+  return Math.sqrt(variance);
+}
+
+/**
+ * Calculate Bollinger Bands
+ * @param closes Array of closing prices
+ * @param period Period for SMA calculation (default: 20)
+ * @param multiplier Standard deviation multiplier (default: 2)
+ * @returns Object with upper, middle, and lower bands, or null if insufficient data
+ */
+export function calculateBollingerBands(
+  closes: number[],
+  period: number = 20,
+  multiplier: number = 2
+): { upper: number; middle: number; lower: number } | null {
+  if (!Array.isArray(closes) || closes.length < period) {
+    return null;
+  }
+  
+  const middle = calculateSMA(closes, period);
+  if (middle === null) {
+    return null;
+  }
+  
+  const stdDev = calculateStandardDeviation(closes, period, middle);
+  if (stdDev === null) {
+    return null;
+  }
+  
+  return {
+    upper: middle + (stdDev * multiplier),
+    middle: middle,
+    lower: middle - (stdDev * multiplier),
+  };
+}
+
+/**
+ * Get current M30 candle data and current price
+ * Helper function to fetch current forming M30 candle and realtime price
+ */
+async function getCurrentM30CandleAndPrice(symbol: string): Promise<{
+  currentCandle: BinanceKline;
+  currentPrice: number;
+} | null> {
+  try {
+    // Fetch current M30 candle (the one currently forming)
+    const klines30m = await fetchKlines(symbol, "30m", 2);
+    
+    if (klines30m.length === 0) {
+      console.error(`[Current M30 ${symbol}] No 30m klines returned`);
+      return null;
+    }
+    
+    // Get the latest candle (may be forming)
+    const currentCandle = klines30m[klines30m.length - 1];
+    
+    // Get Current_Price (realtime)
+    const ticker = await fetch24hTicker(symbol);
+    const currentPrice = ticker.price;
+    
+    return {
+      currentCandle,
+      currentPrice,
+    };
+  } catch (error) {
+    console.error(`[Current M30 ${symbol}] Error:`, error);
+    return null;
+  }
+}
+
+/**
+ * Check SHORT signal condition for current M30 candle
+ * Kiểm tra điều kiện kích hoạt lệnh SHORT cho nến M30 hiện tại
+ * 
+ * Điều kiện:
+ * 1. Current_Price < Open_Price (nến đỏ)
+ * 2. High_Price > Upper_Band_Value (đã từng vượt band)
+ * 3. Current_Price < Upper_Band_Value (giá hiện tại nằm dưới band)
+ * 
+ * @param symbol Trading pair symbol (e.g., "BTCUSDT")
+ * @returns Object with signal status and details, or null if error
+ */
+export async function checkShortSignal(symbol: string): Promise<{
+  isShortSignal: boolean;
+  openPrice: number;
+  currentPrice: number;
+  highPrice: number;
+  upperBandValue: number;
+  middleBand: number;
+  lowerBand: number;
+  currentCandleTime: number;
+} | null> {
+  try {
+    const now = Date.now();
+    
+    // Get current M30 candle and current price using helper function
+    const candleData = await getCurrentM30CandleAndPrice(symbol);
+    if (!candleData) {
+      return null;
+    }
+    
+    const { currentCandle, currentPrice } = candleData;
+    
+    // Get Open_Price, High_Price from current candle
+    const openPrice = parseFloat(currentCandle.open);
+    const highPrice = parseFloat(currentCandle.high);
+    
+    // Calculate Bollinger Bands
+    // Need at least 20 completed candles + current candle for calculation
+    const klinesForBB = await fetchKlines(symbol, "30m", 21);
+    
+    if (klinesForBB.length < 21) {
+      console.error(`[Short Signal ${symbol}] Insufficient klines for Bollinger Band calculation`);
+      return null;
+    }
+    
+    // Use closes from last 20 completed candles + current price for BB calculation
+    const completedKlines = klinesForBB.filter((k) => k.closeTime < now);
+    const closesForBB = completedKlines.slice(-20).map((k) => parseFloat(k.close));
+    
+    // Add current price to closes array for BB calculation
+    const allClosesForBB = [...closesForBB, currentPrice];
+    
+    const bollingerBands = calculateBollingerBands(allClosesForBB, 20, 2);
+    
+    if (!bollingerBands) {
+      console.error(`[Short Signal ${symbol}] Failed to calculate Bollinger Bands`);
+      return null;
+    }
+    
+    const upperBandValue = bollingerBands.upper;
+    
+    // Check 3 conditions for SHORT signal
+    // Condition 1: Nến đỏ - Sử dụng getPriceDifferenceAfter30mKline
+    // Nếu giá trị trả về < 0 (âm) thì là nến đỏ
+    const priceDifferencePercent = await getPriceDifferenceAfter30mKline(symbol);
+    
+    if (priceDifferencePercent === null) {
+      console.error(`[Short Signal ${symbol}] Failed to get price difference for nến đỏ check`);
+      return null;
+    }
+    
+    const condition1 = priceDifferencePercent < 0; // Nến đỏ (âm = giá giảm)
+    const condition2 = highPrice > upperBandValue; // Đã từng vượt band
+    const condition3 = currentPrice < upperBandValue; // Giá hiện tại dưới band
+    
+    const isShortSignal = condition1 && condition2 && condition3;
+    
+    console.log(`[Short Signal ${symbol}] Conditions check:`);
+    console.log(`  - Open: ${openPrice}, Current: ${currentPrice}, High: ${highPrice}`);
+    console.log(`  - Price Difference %: ${priceDifferencePercent.toFixed(2)}%`);
+    console.log(`  - Upper Band: ${upperBandValue.toFixed(2)}`);
+    console.log(`  - Condition 1 (Nến đỏ - Price Diff < 0): ${condition1} (${priceDifferencePercent.toFixed(2)}% < 0)`);
+    console.log(`  - Condition 2 (High > Upper Band): ${condition2} (${highPrice} > ${upperBandValue.toFixed(2)})`);
+    console.log(`  - Condition 3 (Current < Upper Band): ${condition3} (${currentPrice} < ${upperBandValue.toFixed(2)})`);
+    console.log(`  - SHORT Signal: ${isShortSignal ? '✅ YES' : '❌ NO'}`);
+    
+    return {
+      isShortSignal,
+      openPrice,
+      currentPrice,
+      highPrice,
+      upperBandValue,
+      middleBand: bollingerBands.middle,
+      lowerBand: bollingerBands.lower,
+      currentCandleTime: currentCandle.openTime,
+    };
+  } catch (error) {
+    console.error(`[Short Signal ${symbol}] Error:`, error);
+    return null;
+  }
 }
 
 /**

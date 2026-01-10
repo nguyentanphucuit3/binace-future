@@ -8,6 +8,7 @@ import {
   fetchCurrentPriceWithMarkPrice,
   fetchFundingRate,
   getPriceDifferenceAfter30mKline,
+  checkShortSignal,
   type CoinRSI,
 } from "@/lib/binance";
 import { checkAndSendAlertEmail } from "@/lib/email-alert";
@@ -113,6 +114,18 @@ export async function scanRSI(): Promise<{
             // Continue without price difference if it fails
           }
 
+          // Check SHORT signal
+          let isShortSignal: boolean | undefined = undefined;
+          try {
+            const shortSignalResult = await checkShortSignal(symbol);
+            if (shortSignalResult) {
+              isShortSignal = shortSignalResult.isShortSignal;
+            }
+          } catch (error) {
+            console.warn(`[RSI Scan ${symbol}] Failed to check short signal:`, error);
+            // Continue without short signal if it fails
+          }
+
           const coin: CoinRSI = {
             symbol,
             rsi,
@@ -121,6 +134,7 @@ export async function scanRSI(): Promise<{
             fundingRate: fundingData?.fundingRate,
             nextFundingTime: fundingData?.nextFundingTime,
             priceDifference,
+            isShortSignal,
             // Don't include markPrice/indexPrice for RSI scan (only for BTC)
           };
           
