@@ -79,7 +79,7 @@ export function RSIScanResults({
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-x-auto">
-          <Table className="min-w-[600px]">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
@@ -88,12 +88,13 @@ export function RSIScanResults({
                 <TableHead className="text-right">Funding</TableHead>
                 <TableHead className="text-right">Giá (USDT)</TableHead>
                 <TableHead className="text-right">Thay đổi 24h</TableHead>
+                <TableHead className="text-right">Hiệu giá</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCoins.length === 0 && alertFilter !== null ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-lg">
                         {alertFilter === 'red' ? '🔴' : alertFilter === 'yellow' ? '🟡' : '🟢'}

@@ -70,6 +70,7 @@ export default function Home() {
           rsi: number;
           price: number;
           fundingRate?: number;
+          priceDifference?: number;
         };
         
         type SavedScanData = {
@@ -89,6 +90,7 @@ export default function Home() {
             price: c.price,
             change24h: 0, // Không lưu change24h để giảm dung lượng
             fundingRate: c.fundingRate,
+            priceDifference: c.priceDifference,
           }));
           const restoredFiltered: CoinRSI[] = (parsed.filteredCoins || []).map((c: SavedCoinData) => ({
             symbol: c.symbol,
@@ -96,6 +98,7 @@ export default function Home() {
             price: c.price,
             change24h: 0,
             fundingRate: c.fundingRate,
+            priceDifference: c.priceDifference,
           }));
           
           setCoins(restoredCoins);
@@ -252,6 +255,7 @@ export default function Home() {
             rsi: coin.rsi,
             price: coin.price,
             fundingRate: coin.fundingRate,
+            priceDifference: coin.priceDifference,
           }));
           sessionStorage.setItem(SCAN_DATA_KEY, JSON.stringify({
             ...parsed,
@@ -319,18 +323,20 @@ export default function Home() {
           // Xóa data cũ trước
           sessionStorage.removeItem(SCAN_DATA_KEY);
           
-          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate
+          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate, priceDifference
           const minimalCoins = result.coins.map((coin) => ({
             symbol: coin.symbol,
             rsi: coin.rsi,
             price: coin.price,
             fundingRate: coin.fundingRate,
+            priceDifference: coin.priceDifference,
           }));
           const minimalFiltered = filtered.map((coin) => ({
             symbol: coin.symbol,
             rsi: coin.rsi,
             price: coin.price,
             fundingRate: coin.fundingRate,
+            priceDifference: coin.priceDifference,
           }));
           
           // Lưu data mới (ghi đè lên data cũ nếu có)
@@ -351,12 +357,14 @@ export default function Home() {
               rsi: coin.rsi,
               price: coin.price,
               fundingRate: coin.fundingRate,
+              priceDifference: coin.priceDifference,
             }));
             const minimalFiltered = filtered.slice(0, 100).map((coin) => ({
               symbol: coin.symbol,
               rsi: coin.rsi,
               price: coin.price,
               fundingRate: coin.fundingRate,
+              priceDifference: coin.priceDifference,
             }));
             sessionStorage.setItem(SCAN_DATA_KEY, JSON.stringify({
               coins: minimalCoins,
@@ -370,12 +378,13 @@ export default function Home() {
         }
       }
       
-      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate
+      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate, priceDifference
       const coinsToSave = filtered.map((coin) => ({
         symbol: coin.symbol,
         rsi: coin.rsi,
         price: coin.price,
         fundingRate: coin.fundingRate,
+        priceDifference: coin.priceDifference,
       }));
       
       await saveScanHistory({

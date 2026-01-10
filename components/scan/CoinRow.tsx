@@ -84,6 +84,36 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
           {coin.change24h.toFixed(2)}%
         </div>
       </TableCell>
+      <TableCell
+        className={`text-right font-medium ${
+          coin.priceDifference !== undefined
+            ? (Math.abs(coin.priceDifference) < 0.01 ? "text-muted-foreground" : coin.priceDifference >= 0
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400")
+            : "text-muted-foreground"
+        }`}
+      >
+        {coin.priceDifference !== undefined ? (
+          (() => {
+            // Normalize giá trị rất gần 0 về 0 để tránh hiển thị -0.00
+            // priceDifference bây giờ là phần trăm (%)
+            const normalizedDiff = Math.abs(coin.priceDifference) < 0.01 ? 0 : coin.priceDifference;
+            return (
+              <div className="flex items-center justify-end gap-1">
+                {normalizedDiff >= 0 ? (
+                  <TrendingUp className="h-4 w-4" />
+                ) : (
+                  <TrendingDown className="h-4 w-4" />
+                )}
+                {normalizedDiff >= 0 ? "+" : ""}
+                {normalizedDiff.toFixed(2)}%
+              </div>
+            );
+          })()
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        )}
+      </TableCell>
     </TableRow>
   );
 }

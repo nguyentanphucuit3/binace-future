@@ -21,6 +21,7 @@ export interface CoinRSI {
   indexPrice?: number;
   fundingRate?: number;
   nextFundingTime?: number;
+  priceDifference?: number; // Hiệu số phần trăm: ((currentPrice - first1mPrice) / first1mPrice) * 100
 }
 
 /**
@@ -288,6 +289,96 @@ export async function fetchFundingRate(symbol: string): Promise<{
     };
   } catch (error) {
     console.error(`Error fetching funding rate for ${symbol}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get price difference percentage between first 1-minute candle after latest completed 30m candle and current price
+ * Example: If current time is 6h48, latest 30m candle is 6h00-6h30 (closed at 6h30),
+ *          first 1m candle is 6h30-6h31, returns: ((currentPrice - first1mPrice) / first1mPrice) * 100
+ * 
+ * @param symbol Trading pair symbol (e.g., "BTCUSDT")
+ * @returns Price difference percentage: ((currentPrice - first1mPrice) / first1mPrice) * 100, or null if error
+ */
+export async function getPriceDifferenceAfter30mKline(symbol: string): Promise<number | null> {
+  try {
+    const now = Date.now();
+    
+    // Step 1: Get latest completed 30-minute candle (only need 2 klines)
+    const klines30m = await fetchKlines(symbol, "30m", 2);
+    
+    if (klines30m.length === 0) {
+      console.error(`[Price Diff ${symbol}] No 30m klines returned`);
+      return null;
+    }
+    
+    // Filter only completed 30-minute candles (closeTime < now)
+    const completed30mKlines = klines30m.filter((k) => k.closeTime < now);
+    
+    if (completed30mKlines.length === 0) {
+      console.warn(`[Price Diff ${symbol}] No completed 30m klines found`);
+      return null;
+    }
+    
+    // Get the latest completed 30-minute candle
+    const latest30mKline = completed30mKlines[completed30mKlines.length - 1];
+    const latest30mCloseTime = latest30mKline.closeTime; // This is the start time of the first 1m candle
+    
+    // Step 2: Fetch 1-minute klines to get the first 1m candle after 30m closed
+    // Only need to fetch last 35 minutes (30m + some buffer)
+    const klines1m = await fetchKlines(symbol, "1m", 35);
+    
+    if (klines1m.length === 0) {
+      console.error(`[Price Diff ${symbol}] No 1m klines returned`);
+      return null;
+    }
+    
+    // Find the 1m candle that starts exactly when the 30m candle closed
+    const first1mKline = klines1m.find((k) => k.openTime === latest30mCloseTime);
+    
+    if (!first1mKline) {
+      // Try to find the closest 1m candle after the close time (within 1 minute tolerance)
+      const closest1mKline = klines1m.find((k) => 
+        k.openTime >= latest30mCloseTime && 
+        k.openTime < latest30mCloseTime + 60000
+      );
+      
+      if (!closest1mKline) {
+        console.error(`[Price Diff ${symbol}] No suitable 1m candle found`);
+        return null;
+      }
+      
+      // Get first 1m price and current price
+      const first1mPrice = parseFloat(closest1mKline.close);
+      const ticker = await fetch24hTicker(symbol);
+      const currentPrice = ticker.price;
+      
+      // Calculate percentage difference: ((currentPrice - first1mPrice) / first1mPrice) * 100
+      if (first1mPrice === 0) {
+        console.warn(`[Price Diff ${symbol}] First 1m price is 0, cannot calculate percentage`);
+        return null;
+      }
+      
+      const priceDifferencePercent = ((currentPrice - first1mPrice) / first1mPrice) * 100;
+      return priceDifferencePercent;
+    }
+    
+    // Get first 1m price and current price
+    const first1mPrice = parseFloat(first1mKline.close);
+    const ticker = await fetch24hTicker(symbol);
+    const currentPrice = ticker.price;
+    
+    // Calculate percentage difference: ((currentPrice - first1mPrice) / first1mPrice) * 100
+    if (first1mPrice === 0) {
+      console.warn(`[Price Diff ${symbol}] First 1m price is 0, cannot calculate percentage`);
+      return null;
+    }
+    
+    const priceDifferencePercent = ((currentPrice - first1mPrice) / first1mPrice) * 100;
+    return priceDifferencePercent;
+  } catch (error) {
+    console.error(`[Price Diff ${symbol}] Error:`, error);
     return null;
   }
 }

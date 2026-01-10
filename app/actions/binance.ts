@@ -7,6 +7,7 @@ import {
   fetch24hTicker,
   fetchCurrentPriceWithMarkPrice,
   fetchFundingRate,
+  getPriceDifferenceAfter30mKline,
   type CoinRSI,
 } from "@/lib/binance";
 import { checkAndSendAlertEmail } from "@/lib/email-alert";
@@ -100,6 +101,18 @@ export async function scanRSI(): Promise<{
           // Store klines data for this symbol - store 200 nến 30m
           klinesData[symbol] = last20030mKlines;
 
+          // Calculate price difference (currentPrice - first1mPrice after latest 30m)
+          let priceDifference: number | undefined = undefined;
+          try {
+            const diff = await getPriceDifferenceAfter30mKline(symbol);
+            if (diff !== null) {
+              priceDifference = diff;
+            }
+          } catch (error) {
+            console.warn(`[RSI Scan ${symbol}] Failed to get price difference:`, error);
+            // Continue without price difference if it fails
+          }
+
           const coin: CoinRSI = {
             symbol,
             rsi,
@@ -107,6 +120,7 @@ export async function scanRSI(): Promise<{
             change24h: ticker.change24h,
             fundingRate: fundingData?.fundingRate,
             nextFundingTime: fundingData?.nextFundingTime,
+            priceDifference,
             // Don't include markPrice/indexPrice for RSI scan (only for BTC)
           };
           

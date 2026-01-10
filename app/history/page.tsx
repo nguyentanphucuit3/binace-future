@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Trash2, ArrowLeft, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Trash2, ArrowLeft, Eye, EyeOff, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import type { SimpleCoinData } from "@/app/actions/history";
 
 const formatPrice = (price: number, minDecimals = 2, maxDecimals = 8): string => {
@@ -358,6 +358,7 @@ export default function HistoryPage() {
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">RSI (14)</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Funding</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-10">Giá (USDT)</TableHead>
+                                          <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Hiệu giá</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-20">Time</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-24">Ngày</TableHead>
                                           <TableHead className="text-center whitespace-nowrap px-1 text-[14px] w-20">Alert</TableHead>
@@ -406,6 +407,36 @@ export default function HistoryPage() {
                                               </TableCell>
                                               <TableCell className="text-right px-1 text-[15px]">
                                                 ${formatPrice(coin.price)}
+                                              </TableCell>
+                                              <TableCell
+                                                className={`text-right px-1 text-[15px] font-medium ${
+                                                  coin.priceDifference !== undefined
+                                                    ? (Math.abs(coin.priceDifference) < 0.01 ? "text-muted-foreground" : coin.priceDifference >= 0
+                                                      ? "text-green-600 dark:text-green-400"
+                                                      : "text-red-600 dark:text-red-400")
+                                                    : "text-muted-foreground"
+                                                }`}
+                                              >
+                                                {coin.priceDifference !== undefined ? (
+                                                  (() => {
+                                                    // Normalize giá trị rất gần 0 về 0 để tránh hiển thị -0.00
+                                                    // priceDifference bây giờ là phần trăm (%)
+                                                    const normalizedDiff = Math.abs(coin.priceDifference) < 0.01 ? 0 : coin.priceDifference;
+                                                    return (
+                                                      <div className="flex items-center justify-end gap-1">
+                                                        {normalizedDiff >= 0 ? (
+                                                          <TrendingUp className="h-3 w-3" />
+                                                        ) : (
+                                                          <TrendingDown className="h-3 w-3" />
+                                                        )}
+                                                        {normalizedDiff >= 0 ? "+" : ""}
+                                                        {normalizedDiff.toFixed(2)}%
+                                                      </div>
+                                                    );
+                                                  })()
+                                                ) : (
+                                                  <span className="text-muted-foreground text-xs">-</span>
+                                                )}
                                               </TableCell>
                                               <TableCell className="whitespace-nowrap px-1 text-[15px]">
                                                 {time}

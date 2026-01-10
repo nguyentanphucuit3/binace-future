@@ -8,6 +8,7 @@ export interface SimpleCoinData {
   rsi: number;
   price: number;
   fundingRate?: number;
+  priceDifference?: number; // Hiệu số: currentPrice - first1mPrice
 }
 
 export interface ScanHistory {
