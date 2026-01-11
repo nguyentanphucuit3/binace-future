@@ -89,13 +89,12 @@ export function RSIScanResults({
                 <TableHead className="text-right">Giá (USDT)</TableHead>
                 <TableHead className="text-right">Thay đổi 24h</TableHead>
                 <TableHead className="text-right">Nến</TableHead>
-                <TableHead className="text-center">Alert</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCoins.length === 0 && alertFilter !== null ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-lg">
                         {alertFilter === 'red' ? '🔴' : alertFilter === 'yellow' ? '🟡' : alertFilter === 'green' ? '🟢' : alertFilter === 'black' ? '⚫' : '♦️'}

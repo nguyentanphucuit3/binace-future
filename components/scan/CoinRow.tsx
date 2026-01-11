@@ -118,31 +118,6 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
           <span className="text-muted-foreground text-xs">-</span>
         )}
       </TableCell>
-      <TableCell className="text-center">
-        {alertStatus === 'red' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-600 text-white">
-            🔴 ĐỎ
-          </span>
-        ) : alertStatus === 'yellow' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-500 text-white">
-            🟡 VÀNG
-          </span>
-        ) : alertStatus === 'green' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-600 text-white">
-            🟢 XANH
-          </span>
-        ) : alertStatus === 'black' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-black text-white dark:bg-gray-900">
-            ⚫ ĐEN
-          </span>
-        ) : alertStatus === 'pink' ? (
-          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-pink-600 text-white dark:bg-pink-700">
-            ♦️ HỒNG
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs">-</span>
-        )}
-      </TableCell>
     </TableRow>
   );
 }

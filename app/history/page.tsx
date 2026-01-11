@@ -421,7 +421,6 @@ export default function HistoryPage() {
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Nến</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-20">Time</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-24">Ngày</TableHead>
-                                          <TableHead className="text-center whitespace-nowrap px-1 text-[14px] w-20">Alert</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-auto">Action</TableHead>
                                         </TableRow>
                                       </TableHeader>
@@ -507,31 +506,6 @@ export default function HistoryPage() {
                                               </TableCell>
                                               <TableCell className="whitespace-nowrap px-1 text-[15px]">
                                                 {date}
-                                              </TableCell>
-                                              <TableCell className="text-center px-1 text-[15px]">
-                                                {alertStatus === 'red' ? (
-                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600 text-white">
-                                                    🔴 ĐỎ
-                                                  </span>
-                                                ) : alertStatus === 'yellow' ? (
-                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-yellow-500 text-white">
-                                                    🟡 VÀNG
-                                                  </span>
-                                                ) : alertStatus === 'green' ? (
-                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-600 text-white">
-                                                    🟢 XANH
-                                                  </span>
-                                                ) : alertStatus === 'black' ? (
-                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-black text-white dark:bg-gray-900">
-                                                    ⚫ ĐEN
-                                                  </span>
-                                                ) : alertStatus === 'pink' ? (
-                                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-pink-600 text-white dark:bg-pink-700">
-                                                    ♦️ HỒNG
-                                                  </span>
-                                                ) : (
-                                                  <span className="text-muted-foreground text-xs">-</span>
-                                                )}
                                               </TableCell>
                                               <TableCell className="text-right px-1 text-[15px]">
                                                 <Button variant="ghost" size="sm">
