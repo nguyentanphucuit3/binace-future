@@ -21,7 +21,7 @@ export interface CoinRSI {
   indexPrice?: number;
   fundingRate?: number;
   nextFundingTime?: number;
-  priceDifference?: number; // Hiệu số phần trăm: ((currentPrice - first1mPrice) / first1mPrice) * 100
+  priceDifference?: number; // Hiệu số phần trăm: (($price - first1mPrice) / first1mPrice) * 100
   isShortSignal?: boolean; // Tín hiệu SHORT từ checkShortSignal (nến đỏ + đã vượt band + giá dưới band)
 }
 
@@ -154,29 +154,36 @@ export function calculateBollingerBands(
  * Get current M30 candle data and current price
  * Helper function to fetch current forming M30 candle and realtime price
  */
-async function getCurrentM30CandleAndPrice(symbol: string): Promise<{
+async function getCurrentM30CandleAndPrice(
+  symbol: string,
+  klines30m?: BinanceKline[],
+  currentPrice?: number
+): Promise<{
   currentCandle: BinanceKline;
   currentPrice: number;
 } | null> {
   try {
-    // Fetch current M30 candle (the one currently forming)
-    const klines30m = await fetchKlines(symbol, "30m", 2);
-    
-    if (klines30m.length === 0) {
-      console.error(`[Current M30 ${symbol}] No 30m klines returned`);
-      return null;
+    // Get current M30 candle (the one currently forming)
+    let currentCandle: BinanceKline;
+    if (klines30m && klines30m.length > 0) {
+      // Use provided klines (take last one as current candle)
+      currentCandle = klines30m[klines30m.length - 1];
+    } else {
+      // Fallback: fetch if not provided
+      const fetched = await fetchKlines(symbol, "30m", 2);
+      if (fetched.length === 0) {
+        console.error(`[Current M30 ${symbol}] No 30m klines returned`);
+        return null;
+      }
+      currentCandle = fetched[fetched.length - 1];
     }
     
-    // Get the latest candle (may be forming)
-    const currentCandle = klines30m[klines30m.length - 1];
-    
     // Get Current_Price (realtime)
-    const ticker = await fetch24hTicker(symbol);
-    const currentPrice = ticker.price;
+    const price = currentPrice ?? (await fetch24hTicker(symbol)).price;
     
     return {
       currentCandle,
-      currentPrice,
+      currentPrice: price,
     };
   } catch (error) {
     console.error(`[Current M30 ${symbol}] Error:`, error);
@@ -196,7 +203,12 @@ async function getCurrentM30CandleAndPrice(symbol: string): Promise<{
  * @param symbol Trading pair symbol (e.g., "BTCUSDT")
  * @returns Object with signal status and details, or null if error
  */
-export async function checkShortSignal(symbol: string): Promise<{
+export async function checkShortSignal(
+  symbol: string,
+  klines30m?: BinanceKline[],
+  currentPrice?: number,
+  completed30mKlines?: BinanceKline[]
+): Promise<{
   isShortSignal: boolean;
   openPrice: number;
   currentPrice: number;
@@ -210,12 +222,12 @@ export async function checkShortSignal(symbol: string): Promise<{
     const now = Date.now();
     
     // Get current M30 candle and current price using helper function
-    const candleData = await getCurrentM30CandleAndPrice(symbol);
+    const candleData = await getCurrentM30CandleAndPrice(symbol, klines30m, currentPrice);
     if (!candleData) {
       return null;
     }
     
-    const { currentCandle, currentPrice } = candleData;
+    const { currentCandle, currentPrice: price } = candleData;
     
     // Get Open_Price, High_Price from current candle
     const openPrice = parseFloat(currentCandle.open);
@@ -223,11 +235,17 @@ export async function checkShortSignal(symbol: string): Promise<{
     
     // Calculate Bollinger Bands
     // Need at least 20 completed candles + current candle for calculation
-    const klinesForBB = await fetchKlines(symbol, "30m", 21);
-    
-    if (klinesForBB.length < 21) {
-      console.error(`[Short Signal ${symbol}] Insufficient klines for Bollinger Band calculation`);
-      return null;
+    let klinesForBB: BinanceKline[];
+    if (klines30m && klines30m.length >= 21) {
+      // Use provided klines
+      klinesForBB = klines30m;
+    } else {
+      // Fallback: fetch if not provided
+      klinesForBB = await fetchKlines(symbol, "30m", 21);
+      if (klinesForBB.length < 21) {
+        console.error(`[Short Signal ${symbol}] Insufficient klines for Bollinger Band calculation`);
+        return null;
+      }
     }
     
     // Use closes from last 20 completed candles + current price for BB calculation
@@ -235,7 +253,7 @@ export async function checkShortSignal(symbol: string): Promise<{
     const closesForBB = completedKlines.slice(-20).map((k) => parseFloat(k.close));
     
     // Add current price to closes array for BB calculation
-    const allClosesForBB = [...closesForBB, currentPrice];
+    const allClosesForBB = [...closesForBB, price];
     
     const bollingerBands = calculateBollingerBands(allClosesForBB, 20, 2);
     
@@ -249,7 +267,7 @@ export async function checkShortSignal(symbol: string): Promise<{
     // Check 3 conditions for SHORT signal
     // Condition 1: Nến đỏ - Sử dụng getPriceDifferenceAfter30mKline
     // Nếu giá trị trả về < 0 (âm) thì là nến đỏ
-    const priceDifferencePercent = await getPriceDifferenceAfter30mKline(symbol);
+    const priceDifferencePercent = await getPriceDifferenceAfter30mKline(symbol, price, completed30mKlines);
     
     if (priceDifferencePercent === null) {
       console.error(`[Short Signal ${symbol}] Failed to get price difference for nến đỏ check`);
@@ -258,23 +276,23 @@ export async function checkShortSignal(symbol: string): Promise<{
     
     const condition1 = priceDifferencePercent < 0; // Nến đỏ (âm = giá giảm)
     const condition2 = highPrice > upperBandValue; // Đã từng vượt band
-    const condition3 = currentPrice < upperBandValue; // Giá hiện tại dưới band
+    const condition3 = price < upperBandValue; // Giá hiện tại dưới band
     
     const isShortSignal = condition1 && condition2 && condition3;
     
     console.log(`[Short Signal ${symbol}] Conditions check:`);
-    console.log(`  - Open: ${openPrice}, Current: ${currentPrice}, High: ${highPrice}`);
+    console.log(`  - Open: ${openPrice}, Current: ${price}, High: ${highPrice}`);
     console.log(`  - Price Difference %: ${priceDifferencePercent.toFixed(2)}%`);
     console.log(`  - Upper Band: ${upperBandValue.toFixed(2)}`);
     console.log(`  - Condition 1 (Nến đỏ - Price Diff < 0): ${condition1} (${priceDifferencePercent.toFixed(2)}% < 0)`);
     console.log(`  - Condition 2 (High > Upper Band): ${condition2} (${highPrice} > ${upperBandValue.toFixed(2)})`);
-    console.log(`  - Condition 3 (Current < Upper Band): ${condition3} (${currentPrice} < ${upperBandValue.toFixed(2)})`);
+    console.log(`  - Condition 3 (Current < Upper Band): ${condition3} (${price} < ${upperBandValue.toFixed(2)})`);
     console.log(`  - SHORT Signal: ${isShortSignal ? '✅ YES' : '❌ NO'}`);
     
     return {
       isShortSignal,
       openPrice,
-      currentPrice,
+      currentPrice: price,
       highPrice,
       upperBandValue,
       middleBand: bollingerBands.middle,
@@ -509,33 +527,38 @@ export async function fetchFundingRate(symbol: string): Promise<{
 /**
  * Get price difference percentage between first 1-minute candle after latest completed 30m candle and current price
  * Example: If current time is 6h48, latest 30m candle is 6h00-6h30 (closed at 6h30),
- *          first 1m candle is 6h30-6h31, returns: ((currentPrice - first1mPrice) / first1mPrice) * 100
+ *          first 1m candle is 6h30-6h31, returns: (($price - first1mPrice) / first1mPrice) * 100
  * 
  * @param symbol Trading pair symbol (e.g., "BTCUSDT")
  * @returns Price difference percentage: ((currentPrice - first1mPrice) / first1mPrice) * 100, or null if error
  */
-export async function getPriceDifferenceAfter30mKline(symbol: string): Promise<number | null> {
+export async function getPriceDifferenceAfter30mKline(
+  symbol: string,
+  currentPrice?: number,
+  completed30mKlines?: BinanceKline[]
+): Promise<number | null> {
   try {
     const now = Date.now();
     
-    // Step 1: Get latest completed 30-minute candle (only need 2 klines)
-    const klines30m = await fetchKlines(symbol, "30m", 2);
-    
-    if (klines30m.length === 0) {
-      console.error(`[Price Diff ${symbol}] No 30m klines returned`);
-      return null;
+    // Step 1: Get latest completed 30-minute candle
+    let latest30mKline: BinanceKline;
+    if (completed30mKlines && completed30mKlines.length > 0) {
+      // Use provided klines (take last one as latest completed)
+      latest30mKline = completed30mKlines[completed30mKlines.length - 1];
+    } else {
+      // Fallback: fetch if not provided
+      const klines30m = await fetchKlines(symbol, "30m", 2);
+      if (klines30m.length === 0) {
+        console.error(`[Price Diff ${symbol}] No 30m klines returned`);
+        return null;
+      }
+      const completed = klines30m.filter((k) => k.closeTime < now);
+      if (completed.length === 0) {
+        console.warn(`[Price Diff ${symbol}] No completed 30m klines found`);
+        return null;
+      }
+      latest30mKline = completed[completed.length - 1];
     }
-    
-    // Filter only completed 30-minute candles (closeTime < now)
-    const completed30mKlines = klines30m.filter((k) => k.closeTime < now);
-    
-    if (completed30mKlines.length === 0) {
-      console.warn(`[Price Diff ${symbol}] No completed 30m klines found`);
-      return null;
-    }
-    
-    // Get the latest completed 30-minute candle
-    const latest30mKline = completed30mKlines[completed30mKlines.length - 1];
     const latest30mCloseTime = latest30mKline.closeTime; // This is the start time of the first 1m candle
     
     // Step 2: Fetch 1-minute klines to get the first 1m candle after 30m closed
@@ -564,31 +587,29 @@ export async function getPriceDifferenceAfter30mKline(symbol: string): Promise<n
       
       // Get first 1m price and current price
       const first1mPrice = parseFloat(closest1mKline.close);
-      const ticker = await fetch24hTicker(symbol);
-      const currentPrice = ticker.price;
+      const price = currentPrice ?? (await fetch24hTicker(symbol)).price;
       
-      // Calculate percentage difference: ((currentPrice - first1mPrice) / first1mPrice) * 100
+      // Calculate percentage difference: ((price - first1mPrice) / first1mPrice) * 100
       if (first1mPrice === 0) {
         console.warn(`[Price Diff ${symbol}] First 1m price is 0, cannot calculate percentage`);
         return null;
       }
       
-      const priceDifferencePercent = ((currentPrice - first1mPrice) / first1mPrice) * 100;
+      const priceDifferencePercent = ((price - first1mPrice) / first1mPrice) * 100;
       return priceDifferencePercent;
     }
     
     // Get first 1m price and current price
     const first1mPrice = parseFloat(first1mKline.close);
-    const ticker = await fetch24hTicker(symbol);
-    const currentPrice = ticker.price;
+    const price = currentPrice ?? (await fetch24hTicker(symbol)).price;
     
-    // Calculate percentage difference: ((currentPrice - first1mPrice) / first1mPrice) * 100
+    // Calculate percentage difference: ((price - first1mPrice) / first1mPrice) * 100
     if (first1mPrice === 0) {
       console.warn(`[Price Diff ${symbol}] First 1m price is 0, cannot calculate percentage`);
       return null;
     }
     
-    const priceDifferencePercent = ((currentPrice - first1mPrice) / first1mPrice) * 100;
+    const priceDifferencePercent = ((price - first1mPrice) / first1mPrice) * 100;
     return priceDifferencePercent;
   } catch (error) {
     console.error(`[Price Diff ${symbol}] Error:`, error);
