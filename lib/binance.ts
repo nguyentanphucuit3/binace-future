@@ -595,4 +595,3 @@ export async function getPriceDifferenceAfter30mKline(symbol: string): Promise<n
     return null;
   }
 }
-

@@ -1,6 +1,6 @@
 // Supabase Edge Function to auto scan RSI
-// Runs from 5:29:30 AM to 11:59:30 PM (23:59:30) Vietnam time, every 30 minutes
-// Schedule: 5:29:30, 5:59:30, 6:29:30, 6:59:30, 7:29:30, 7:59:30, 8:29:30, 8:59:30, 9:29:30, 9:59:30, 10:29:30, 10:59:30, 11:29:30, 11:59:30, 12:29:30, 12:59:30, 13:29:30, 13:59:30, 14:29:30, 14:59:30, 15:29:30, 15:59:30, 16:29:30, 16:59:30, 17:29:30, 17:59:30, 18:29:30, 18:59:30, 19:29:30, 19:59:30, 20:29:30, 20:59:30, 21:29:30, 21:59:30, 22:29:30, 22:59:30, 23:29:30, 23:59:30
+// Runs from 5:29 AM to 11:59 PM (23:59) Vietnam time, every 30 minutes
+// Schedule: 5:29, 5:59, 6:29, 6:59, 7:29, 7:59, 8:29, 8:59, 9:29, 9:59, 10:29, 10:59, 11:29, 11:59, 12:29, 12:59, 13:29, 13:59, 14:29, 14:59, 15:29, 15:59, 16:29, 16:59, 17:29, 17:59, 18:29, 18:59, 19:29, 19:59, 20:29, 20:59, 21:29, 21:59, 22:29, 22:59, 23:29, 23:59
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -49,28 +49,27 @@ function getVietnamTime(): Date {
 }
 
 // Check if current time is within scan window
-// Runs from 5:29:30 AM to 11:59:30 PM (23:59:30) Vietnam time, every 30 minutes
+// Runs from 5:29 AM to 11:59 PM (23:59) Vietnam time, every 30 minutes
 function isWithinScanWindow(): boolean {
   const vietnamTime = getVietnamTimeInfo();
   const hour = vietnamTime.hour;
   const minute = vietnamTime.minute;
-  const second = vietnamTime.second;
   
-  // Check if within time window (5:29:30 to 23:59:30)
-  if (hour < 5 || (hour === 5 && (minute < 29 || (minute === 29 && second < 30)))) {
-    return false; // Before 5:29:30
+  // Check if within time window (5:29 to 23:59)
+  if (hour < 5 || (hour === 5 && minute < 29)) {
+    return false; // Before 5:29
   }
   if (hour >= 24) {
     return false; // After 23:59
   }
   
   // Only run at specific times:
-  // - :29:30 of hours 5-23
-  // - :59:30 of hours 5-23
-  if (minute === 29 && second === 30) {
+  // - :29 of hours 5-23
+  // - :59 of hours 5-23
+  if (minute === 29) {
     return hour >= 5 && hour <= 23;
   }
-  if (minute === 59 && second === 30) {
+  if (minute === 59) {
     return hour >= 5 && hour <= 23;
   }
   
@@ -107,11 +106,11 @@ Deno.serve(async (req: Request) => {
     if (!isWithinWindow) {
       console.log(`[Auto Scan] Outside scan window, skipping scan`);
       console.log(`[Auto Scan] Current time: ${vietnamTimeInfo.hour}:${vietnamTimeInfo.minute.toString().padStart(2, '0')}:${vietnamTimeInfo.second.toString().padStart(2, '0')}`);
-      console.log(`[Auto Scan] Scan window: 5:29:30 - 23:59:30 VN time, every 30 minutes`);
+      console.log(`[Auto Scan] Scan window: 5:29 - 23:59 VN time, every 30 minutes`);
       return new Response(
         JSON.stringify({
           success: false,
-          message: `Outside scan window. Current Vietnam time: ${vietnamTimeInfo.formatted}. Scan runs from 5:29:30 to 23:59:30 VN time, every 30 minutes.`,
+          message: `Outside scan window. Current Vietnam time: ${vietnamTimeInfo.formatted}. Scan runs from 5:29 to 23:59 VN time, every 30 minutes.`,
         }),
         {
           headers: { "Content-Type": "application/json" },

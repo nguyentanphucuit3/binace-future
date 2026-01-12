@@ -103,9 +103,10 @@ export async function scanRSI(): Promise<{
           klinesData[symbol] = last20030mKlines;
 
           // Calculate price difference (currentPrice - first1mPrice after latest 30m)
+          // Pass currentPrice and completed30mKlines to avoid re-fetching
           let priceDifference: number | undefined = undefined;
           try {
-            const diff = await getPriceDifferenceAfter30mKline(symbol);
+            const diff = await getPriceDifferenceAfter30mKline(symbol, currentPrice, completed30mKlines);
             if (diff !== null) {
               priceDifference = diff;
             }
@@ -115,9 +116,10 @@ export async function scanRSI(): Promise<{
           }
 
           // Check SHORT signal
+          // Pass klines30m, currentPrice, and completed30mKlines to avoid re-fetching
           let isShortSignal: boolean | undefined = undefined;
           try {
-            const shortSignalResult = await checkShortSignal(symbol);
+            const shortSignalResult = await checkShortSignal(symbol, klines30m, currentPrice, completed30mKlines);
             if (shortSignalResult) {
               isShortSignal = shortSignalResult.isShortSignal;
             }
