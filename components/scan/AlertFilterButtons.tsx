@@ -76,7 +76,7 @@ export function AlertFilterButtons({
           ) : alertFilter === 'green' ? (
             <span>🟢 Báo động xanh: RSI ≥ 70 VÀ Funding Rate ≥ 0.05%</span>
           ) : alertFilter === 'black' ? (
-            <span>⚫ Báo động đen: RSI ≥ 80 và Funding Rate = 0.5% (0.005)</span>
+            <span>⚫ Báo động đen: RSI ≥ 80 và Funding Rate = 0.005%</span>
           ) : (
             <span>♦️ Báo động hồng: (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</span>
           )}
