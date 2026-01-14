@@ -11,10 +11,10 @@ export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | 'pin
     return 'red';
   }
 
-  // Báo động Đen: RSI >= 80 AND Funding Rate >= 0.00005 (0.0050% = 0.5%)
-  // Note: Funding rate từ Binance API là decimal form (0.00005 = 0.0050% khi hiển thị)
+  // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (0.5%)
+  // Note: Funding rate từ Binance API là decimal form (0.005 = 0.5% khi hiển thị)
   // (Kiểm tra trước Báo động Hồng - có độ ưu tiên cao)
-  if (coin.rsi >= 80 && fundingRate >= 0.00005) {
+  if (coin.rsi >= 80 && fundingRate === 0.005) {
     return 'black';
   }
 
