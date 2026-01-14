@@ -112,8 +112,9 @@ export default function HistoryPage() {
       return 'red';
     }
     
-    // Báo động Đen: RSI >= 80 AND Funding Rate = 0.5% (0.005 trong decimal form)
-    // Note: Funding rate từ Binance API là decimal form (0.005 = 0.5% khi hiển thị)
+    // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (trong code)
+    // Note: Funding rate từ Binance API là decimal form
+    // 0.005 (trong code) = 0.5% (khi hiển thị: 0.005 * 100 = 0.5%)
     if (coin.rsi >= 80 && isFundingRateEqual(fundingRate, 0.5)) {
       return 'black';
     }
