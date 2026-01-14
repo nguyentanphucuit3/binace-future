@@ -101,14 +101,14 @@ export default function HistoryPage() {
     const fundingRate = coin.fundingRate ?? 0;
     
     // Báo động Đỏ: RSI 85-100 AND Funding Rate >= 0.0005 (0.05%)
-    if (coin.rsi >= 85 && coin.rsi <= 100 && fundingRate >= 0.0005) {
+    if (coin.rsi >= 85 && coin.rsi <= 100 && fundingRate*100 == 0.005) {
       return 'red';
     }
     
     // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (trong code)
     // Note: Funding rate từ Binance API là decimal form
     // So sánh: fundingRate * 100 == 0.5 (vì 0.005 * 100 = 0.5%)
-    if (coin.rsi >= 80 && Math.abs(fundingRate * 100 - 0.5) < 0.0001) {
+    if (coin.rsi >= 80 && fundingRate >= 0.005) {
       return 'black';
     }
     
