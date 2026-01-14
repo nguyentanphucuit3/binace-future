@@ -11,7 +11,8 @@ export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | 'pin
     return 'red';
   }
 
-  // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (0.5%)
+  // Báo động Đen: RSI >= 80 AND Funding Rate >= 0.005 (0.5%)
+  // Note: 0.005 và 0.0050 được coi là bằng nhau trong JavaScript
   // (Kiểm tra trước Báo động Hồng - có độ ưu tiên cao)
   if (coin.rsi >= 80 && fundingRate >= 0.005) {
     return 'black';
