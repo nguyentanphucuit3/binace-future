@@ -296,7 +296,7 @@ export async function sendAlertNotification({
 
           ${hasBlack ? `
           <div class="alert-section">
-            <div class="alert-title" style="background: #f3f4f6; color: #000; border-left: 4px solid #000;">⚫ Báo động Đen (RSI ≥ 80 và Funding Rate = 0.5%)</div>
+            <div class="alert-title" style="background: #f3f4f6; color: #000; border-left: 4px solid #000;">⚫ Báo động Đen (RSI ≥ 80 và Funding Rate ≥ 0.0050% = 0.5%)</div>
             <table class="coins-table">
               <thead>
                 <tr>
