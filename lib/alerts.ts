@@ -1,20 +1,6 @@
 import type { CoinRSI } from "@/lib/binance";
 
 /**
- * Compare funding rate with tolerance for floating point precision
- * @param fundingRate - Funding rate in decimal form (e.g., 0.005 = 0.5%)
- * @param targetPercent - Target percentage (e.g., 0.5 for 0.5%)
- * @returns true if funding rate equals target percentage (within tolerance)
- */
-const isFundingRateEqual = (fundingRate: number, targetPercent: number): boolean => {
-  // Convert target percentage to decimal: 0.5% = 0.005
-  const targetDecimal = targetPercent / 100;
-  // Use small tolerance for floating point comparison
-  const tolerance = 0.000001;
-  return Math.abs(fundingRate - targetDecimal) < tolerance;
-};
-
-/**
  * Get alert status for a coin
  */
 export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | 'pink' | 'black' | null => {
@@ -27,10 +13,9 @@ export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | 'pin
 
   // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (trong code)
   // Note: Funding rate từ Binance API là decimal form
-  // 0.005 (trong code) = 0.5% (khi hiển thị: 0.005 * 100 = 0.5%)
-  // Sử dụng hàm so sánh với tolerance để tránh lỗi floating point
+  // So sánh: fundingRate * 100 == 0.5 (vì 0.005 * 100 = 0.5%)
   // (Kiểm tra trước Báo động Hồng - có độ ưu tiên cao)
-  if (coin.rsi >= 80 && isFundingRateEqual(fundingRate, 0.5)) {
+  if (coin.rsi >= 80 && Math.abs(fundingRate * 100 - 0.5) < 0.0001) {
     return 'black';
   }
 

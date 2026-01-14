@@ -97,13 +97,6 @@ export default function HistoryPage() {
   };
 
   // Check alert status for a coin
-  // Helper function to compare funding rate with tolerance
-  const isFundingRateEqual = (fundingRate: number, targetPercent: number): boolean => {
-    const targetDecimal = targetPercent / 100;
-    const tolerance = 0.000001;
-    return Math.abs(fundingRate - targetDecimal) < tolerance;
-  };
-
   const getAlertStatus = (coin: SimpleCoinData): 'red' | 'yellow' | 'green' | 'black' | 'pink' | null => {
     const fundingRate = coin.fundingRate ?? 0;
     
@@ -114,8 +107,8 @@ export default function HistoryPage() {
     
     // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (trong code)
     // Note: Funding rate từ Binance API là decimal form
-    // 0.005 (trong code) = 0.5% (khi hiển thị: 0.005 * 100 = 0.5%)
-    if (coin.rsi >= 80 && isFundingRateEqual(fundingRate, 0.5)) {
+    // So sánh: fundingRate * 100 == 0.5 (vì 0.005 * 100 = 0.5%)
+    if (coin.rsi >= 80 && Math.abs(fundingRate * 100 - 0.5) < 0.0001) {
       return 'black';
     }
     
