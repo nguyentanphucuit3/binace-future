@@ -105,8 +105,8 @@ export default function HistoryPage() {
       return 'red';
     }
     
-    // Báo động Đen: RSI >= 70 AND Funding Rate từ -2 đến -1.8
-    if (coin.rsi >= 70 && fundingRate >= -2 && fundingRate <= -1.8) {
+    // Báo động Đen: RSI >= 80 AND Funding Rate = 0.005 (0.5%)
+    if (coin.rsi >= 80 && fundingRate >= 0.005) {
       return 'black';
     }
     
@@ -299,7 +299,7 @@ export default function HistoryPage() {
                       <div>🔴 <strong>Báo động đỏ:</strong> RSI 85-100 và Funding Rate ≥ 0.05% (0.0005)</div>
                       <div>🟡 <strong>Báo động vàng:</strong> RSI 75-79 và Funding Rate ≥ 0.05% (0.0005)</div>
                       <div>🟢 <strong>Báo động xanh:</strong> RSI ≥ 70 và Funding Rate ≥ 0.05% (0.0005)</div>
-                      <div>⚫ <strong>Báo động đen:</strong> RSI ≥ 70 và Funding Rate từ -2 đến -1.8</div>
+                      <div>⚫ <strong>Báo động đen:</strong> RSI ≥ 80 và Funding Rate = 0.5% (0.005)</div>
                       <div>♦️ <strong>Báo động hồng:</strong> (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</div>
                     </div>
                   </div>
