@@ -71,7 +71,7 @@ export async function sendEmail({
 }
 
 interface AlertCoin extends CoinRSI {
-  alertStatus: 'red' | 'yellow' | 'green' | 'pink' | 'black';
+  alertStatus: 'red' | 'yellow' | 'green' | 'pink' | 'black' | 'price3_funding';
 }
 
 export async function sendAlertNotification({
@@ -98,12 +98,14 @@ export async function sendAlertNotification({
   const greenCoins = alertCoins.filter(c => c.alertStatus === 'green');
   const blackCoins = alertCoins.filter(c => c.alertStatus === 'black');
   const pinkCoins = alertCoins.filter(c => c.alertStatus === 'pink');
+  const price3FundingCoins = alertCoins.filter(c => c.alertStatus === 'price3_funding');
 
   const hasRed = redCoins.length > 0;
   const hasYellow = yellowCoins.length > 0;
   const hasGreen = greenCoins.length > 0;
   const hasBlack = blackCoins.length > 0;
   const hasPink = pinkCoins.length > 0;
+  const hasPrice3Funding = price3FundingCoins.length > 0;
 
   // Determine subject and priority
   let subject = '🔔 ';
@@ -117,6 +119,8 @@ export async function sendAlertNotification({
     subject += `[🟡 BÁO ĐỘNG VÀNG] ${yellowCoins.length} coin`;
   } else if (hasGreen) {
     subject += `[🟢 BÁO ĐỘNG XANH] ${greenCoins.length} coin`;
+  } else if (hasPrice3Funding) {
+    subject += `[🟠 BÁO ĐỘNG GIÁ (3)] ${price3FundingCoins.length} coin`;
   }
   subject += ` - Binance Futures Scan ${scanTime}`;
 
@@ -141,7 +145,7 @@ export async function sendAlertNotification({
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; background: #f5f5f5; }
         .container { max-width: full; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header { 
-          background: ${hasRed ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' : hasBlack ? 'linear-gradient(135deg, #000 0%, #374151 100%)' : hasPink ? 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' : hasYellow ? 'linear-gradient(135deg, #d97706 0%, #92400e 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'}; 
+          background: ${hasRed ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' : hasBlack ? 'linear-gradient(135deg, #000 0%, #374151 100%)' : hasPink ? 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' : hasYellow ? 'linear-gradient(135deg, #d97706 0%, #92400e 100%)' : hasPrice3Funding ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'}; 
           color: white; 
           padding: 30px; 
           text-align: center; 
@@ -200,7 +204,7 @@ export async function sendAlertNotification({
     <body>
       <div class="container">
         <div class="header">
-          <h1>${hasRed ? '🔴 BÁO ĐỘNG ĐỎ' : hasBlack ? '⚫ BÁO ĐỘNG ĐEN' : hasPink ? '♦️ BÁO ĐỘNG HỒNG' : hasYellow ? '🟡 BÁO ĐỘNG VÀNG' : '🟢 BÁO ĐỘNG XANH'}</h1>
+          <h1>${hasRed ? '🔴 BÁO ĐỘNG ĐỎ' : hasBlack ? '⚫ BÁO ĐỘNG ĐEN' : hasPink ? '♦️ BÁO ĐỘNG HỒNG' : hasYellow ? '🟡 BÁO ĐỘNG VÀNG' : hasPrice3Funding ? '🟠 BÁO ĐỘNG GIÁ (3)' : '🟢 BÁO ĐỘNG XANH'}</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Binance Futures RSI Scan Alert</p>
         </div>
         <div class="content">
@@ -214,6 +218,7 @@ export async function sendAlertNotification({
             ${hasPink ? `<div class="summary-item"><div class="summary-label">♦️ Báo động Hồng</div><div class="summary-value" style="color: #ec4899;">${pinkCoins.length}</div></div>` : ''}
             ${hasYellow ? `<div class="summary-item"><div class="summary-label">🟡 Báo động Vàng</div><div class="summary-value summary-yellow">${yellowCoins.length}</div></div>` : ''}
             ${hasGreen ? `<div class="summary-item"><div class="summary-label">🟢 Báo động Xanh</div><div class="summary-value summary-green">${greenCoins.length}</div></div>` : ''}
+            ${hasPrice3Funding ? `<div class="summary-item"><div class="summary-label">🟠 Báo động Giá (3)</div><div class="summary-value" style="color: #d97706;">${price3FundingCoins.length}</div></div>` : ''}
           </div>
 
           ${hasRed ? `
@@ -339,6 +344,36 @@ export async function sendAlertNotification({
                     <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
                     <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
                     <td style="text-align: right;">$${formatPrice(coin.price)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          ${hasPrice3Funding ? `
+          <div class="alert-section">
+            <div class="alert-title" style="background: #fef3c7; color: #92400e; border-left: 4px solid #d97706;">🟠 Báo động Giá (3) (Giá (3) trong khoảng 300-2100 + RSI ≥ 70 + Funding 0.05% hoặc 0.01%)</div>
+            <table class="coins-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th style="text-align: right;">RSI</th>
+                  <th style="text-align: right;">Funding Rate</th>
+                  <th style="text-align: right;">Giá (USDT)</th>
+                  <th style="text-align: right;">Giá (2)</th>
+                  <th style="text-align: right;">Giá (3)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${price3FundingCoins.map(coin => `
+                  <tr>
+                    <td class="symbol">${coin.symbol}</td>
+                    <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
+                    <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
+                    <td style="text-align: right;">$${formatPrice(coin.price)}</td>
+                    <td style="text-align: right;">${coin.price2 != null ? '$' + formatPrice(coin.price2) : '-'}</td>
+                    <td style="text-align: right;">${coin.price3 != null ? coin.price3.toLocaleString() : '-'}</td>
                   </tr>
                 `).join('')}
               </tbody>

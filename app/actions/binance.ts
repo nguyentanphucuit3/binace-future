@@ -4,12 +4,14 @@ import {
   fetchUSDTFuturesPairs,
   fetchKlines,
   calculateRSI,
+  calculateRSIAtTime,
   fetch24hTicker,
   fetchCurrentPriceWithMarkPrice,
   fetchFundingRate,
   getPriceDifferenceAfter30mKline,
   checkShortSignal,
   type CoinRSI,
+  type RSIAtTimeResult,
 } from "@/lib/binance";
 import { checkAndSendAlertEmail } from "@/lib/email-alert";
 
@@ -128,6 +130,26 @@ export async function scanRSI(): Promise<{
             // Continue without short signal if it fails
           }
 
+          // Giá (2): tại 5 mốc 30m gần nhất (nến 195..199), nếu có RSI 45-55 thì lấy giá đóng cửa tại mốc đó
+          let price2: number | undefined = undefined;
+          const last5StartIndex = Math.max(0, last20030mKlines.length - 5);
+          for (let i = last20030mKlines.length - 1; i >= last5StartIndex && i >= 14; i--) {
+            const closesUpToI = closes30m.slice(0, i + 1);
+            const rsiAtI = calculateRSI(closesUpToI, 14);
+            if (rsiAtI !== null && rsiAtI >= 45 && rsiAtI <= 55) {
+              price2 = parseFloat(last20030mKlines[i].close);
+              break;
+            }
+          }
+
+          // Giá (3): giá trị tuyệt đối chữ số sau số thập phân của (price2 - price), vd 0,005578 → 5578
+          let price3: number | undefined = undefined;
+          if (price2 !== undefined) {
+            const diff = Math.abs(price2 - ticker.price);
+            const afterDot = (diff.toFixed(8).split('.')[1] || '').replace(/0+$/, '');
+            price3 = afterDot === '' ? 0 : parseInt(afterDot, 10);
+          }
+
           const coin: CoinRSI = {
             symbol,
             rsi,
@@ -137,6 +159,8 @@ export async function scanRSI(): Promise<{
             nextFundingTime: fundingData?.nextFundingTime,
             priceDifference,
             isShortSignal,
+            price2,
+            price3,
             // Don't include markPrice/indexPrice for RSI scan (only for BTC)
           };
           
@@ -319,6 +343,28 @@ export async function scanFunding(): Promise<{
   } catch (error) {
     console.error("[Funding Scan] Error scanning funding rates:", error);
     return { coins: [] };
+  }
+}
+
+/**
+ * Server Action: Tính RSI tại một mốc thời gian cho một coin.
+ * @param symbol Cặp (vd: "BTCUSDT")
+ * @param atTime Unix timestamp (ms) hoặc chuỗi ISO date
+ */
+export async function getRSIAtTime(
+  symbol: string,
+  atTime: number | string
+): Promise<{ success: boolean; data: RSIAtTimeResult | null; error?: string }> {
+  try {
+    const ts = typeof atTime === "string" ? new Date(atTime).getTime() : atTime;
+    if (Number.isNaN(ts) || ts <= 0) {
+      return { success: false, data: null, error: "Mốc thời gian không hợp lệ" };
+    }
+    const data = await calculateRSIAtTime(symbol.toUpperCase(), ts);
+    return { success: true, data };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Lỗi tính RSI theo thời gian";
+    return { success: false, data: null, error: message };
   }
 }
 

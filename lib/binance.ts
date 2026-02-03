@@ -23,6 +23,10 @@ export interface CoinRSI {
   nextFundingTime?: number;
   priceDifference?: number; // Hiệu số phần trăm: (($price - first1mPrice) / first1mPrice) * 100
   isShortSignal?: boolean; // Tín hiệu SHORT từ checkShortSignal (nến đỏ + đã vượt band + giá dưới band)
+  /** Giá (2): giá tại một trong 5 nến 30m gần nhất mà RSI nằm trong 45-55 (nếu có) */
+  price2?: number;
+  /** Giá (3): chữ số sau dấu thập phân của |price2 - price| (vd: 0,005578 → 5578), chỉ khi có price2 */
+  price3?: number;
 }
 
 /**
@@ -305,19 +309,29 @@ export async function checkShortSignal(
   }
 }
 
+export interface FetchKlinesOptions {
+  startTime?: number;
+  endTime?: number;
+}
+
 /**
  * Fetch klines (candlestick data) from Binance Futures API
+ * @param options.startTime - Start time (ms). Optional.
+ * @param options.endTime - End time (ms). Optional. API returns klines with closeTime < endTime.
  */
 export async function fetchKlines(
   symbol: string,
   interval: string = "30m",
-  limit: number = 200
+  limit: number = 200,
+  options?: FetchKlinesOptions
 ): Promise<BinanceKline[]> {
   try {
-    // Add timestamp to URL to ensure fresh data
     const timestamp = Date.now();
+    let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&_t=${timestamp}`;
+    if (options?.startTime != null) url += `&startTime=${options.startTime}`;
+    if (options?.endTime != null) url += `&endTime=${options.endTime}`;
     const response = await fetch(
-      `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&_t=${timestamp}`,
+      url,
       {
         cache: "no-store",
         headers: {
@@ -350,6 +364,56 @@ export async function fetchKlines(
   } catch (error) {
     console.error(`Error fetching klines for ${symbol}:`, error);
     return [];
+  }
+}
+
+export interface RSIAtTimeResult {
+  symbol: string;
+  rsi: number;
+  atTime: number;
+  closesUsed: number;
+  lastCloseTime: number;
+  priceAtTime: number;
+}
+
+/**
+ * Tính RSI tại một mốc thời gian cho một coin.
+ * Dùng 200 nến 30m đã đóng trước atTime (closeTime < atTime), không dùng giá realtime.
+ *
+ * @param symbol Cặp giao dịch (vd: "BTCUSDT")
+ * @param atTime Mốc thời gian (ms, Unix timestamp)
+ * @param period Chu kỳ RSI (mặc định 14)
+ * @returns RSI và metadata tại thời điểm đó, hoặc null nếu không đủ dữ liệu
+ */
+export async function calculateRSIAtTime(
+  symbol: string,
+  atTime: number,
+  period: number = 14
+): Promise<RSIAtTimeResult | null> {
+  try {
+    // Lấy 200 nến 30m có closeTime < atTime (API trả về klines với closeTime < endTime)
+    const klines = await fetchKlines(symbol, "30m", 200, { endTime: atTime });
+    if (klines.length < period + 1) {
+      return null;
+    }
+    const last200 = klines.slice(-200);
+    const closes = last200.map((k) => parseFloat(k.close));
+    const rsi = calculateRSI(closes, period);
+    if (rsi === null) {
+      return null;
+    }
+    const lastKline = last200[last200.length - 1];
+    return {
+      symbol,
+      rsi,
+      atTime,
+      closesUsed: closes.length,
+      lastCloseTime: lastKline.closeTime,
+      priceAtTime: parseFloat(lastKline.close),
+    };
+  } catch (error) {
+    console.error(`[RSI At Time ${symbol}] Error:`, error);
+    return null;
   }
 }
 

@@ -10,6 +10,8 @@ export interface SimpleCoinData {
   fundingRate?: number;
   priceDifference?: number; // Hiệu số phần trăm: ((currentPrice - first1mPrice) / first1mPrice) * 100
   isShortSignal?: boolean; // Tín hiệu SHORT
+  price2?: number; // Giá tại một trong 5 nến 30m gần nhất mà RSI 45-55
+  price3?: number; // Chữ số sau dấu thập phân của |price2 - price|
 }
 
 export interface ScanHistory {

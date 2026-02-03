@@ -3,7 +3,7 @@
  * Can be called from both API route and server action
  */
 import type { CoinRSI } from '@/lib/binance';
-import { getAlertStatus } from '@/lib/alerts';
+import { getAlertStatus, getPrice3AlertRange } from '@/lib/alerts';
 import { sendAlertNotification } from './email';
 
 const TIMEZONE = "Asia/Ho_Chi_Minh";
@@ -21,18 +21,34 @@ const formatVietnamTime = (timestamp: number): string => {
   });
 };
 
+/** Điều kiện gửi email: Giá (3) trong khoảng 300-2100 + RSI >= 70 + Funding 0.05% hoặc 0.01% */
+function isPrice3FundingAlert(coin: CoinRSI): boolean {
+  const price3Range = getPrice3AlertRange(coin.price3);
+  if (!price3Range) return false;
+  if (coin.rsi < 70) return false;
+  const fr = coin.fundingRate ?? 0;
+  const fundingOk = fr >= 0.0005 || Math.abs(fr * 100 - 0.01) < 0.0001;
+  return fundingOk;
+}
+
+export type AlertStatusForEmail = 'red' | 'yellow' | 'green' | 'pink' | 'black' | 'price3_funding';
+
 export async function checkAndSendAlertEmail(coins: CoinRSI[]): Promise<{
   sent: boolean;
   alertCount: number;
   error?: string;
 }> {
   try {
-    // Check for alerts on all coins
-    const alertCoins: Array<CoinRSI & { alertStatus: 'red' | 'yellow' | 'green' | 'pink' | 'black' }> = [];
+    // Check for alerts on all coins (red, yellow, green, pink, black)
+    const alertCoins: Array<CoinRSI & { alertStatus: AlertStatusForEmail }> = [];
     for (const coin of coins) {
       const alertStatus = getAlertStatus(coin);
       if (alertStatus) {
         alertCoins.push({ ...coin, alertStatus });
+      }
+      // Thêm điều kiện gửi email: báo động Giá (3) (300-2100) + RSI >= 70 + Funding 0.05% hoặc 0.01%
+      if (isPrice3FundingAlert(coin)) {
+        alertCoins.push({ ...coin, alertStatus: 'price3_funding' });
       }
     }
 

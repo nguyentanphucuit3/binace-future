@@ -13,8 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Trash2, ArrowLeft, Eye, EyeOff, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, Trash2, ArrowLeft, Eye, EyeOff, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { SimpleCoinData } from "@/app/actions/history";
+import { getPrice3AlertRange, PRICE3_ALERT_RANGES, type Price3AlertRange } from "@/lib/alerts";
 
 const formatPrice = (price: number, minDecimals = 2, maxDecimals = 8): string => {
   return price.toLocaleString("en-US", {
@@ -65,6 +66,8 @@ export default function HistoryPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | 'black' | 'pink' | null>(null);
+  const [onlyWithPrice2, setOnlyWithPrice2] = useState(false);
+  const [price3AlertFilter, setPrice3AlertFilter] = useState<Price3AlertRange | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
@@ -132,21 +135,27 @@ export default function HistoryPage() {
     return null;
   };
 
-  // Filter coins based on alert filter
+  // Filter coins based on alert filter and "có Giá (2)"
   const getFilteredCoins = (coins: SimpleCoinData[]): SimpleCoinData[] => {
+    let result = coins;
     if (alertFilter === 'red') {
-      return coins.filter((coin) => getAlertStatus(coin) === 'red');
+      result = result.filter((coin) => getAlertStatus(coin) === 'red');
     } else if (alertFilter === 'yellow') {
-      return coins.filter((coin) => getAlertStatus(coin) === 'yellow');
+      result = result.filter((coin) => getAlertStatus(coin) === 'yellow');
     } else if (alertFilter === 'green') {
-      return coins.filter((coin) => getAlertStatus(coin) === 'green');
+      result = result.filter((coin) => getAlertStatus(coin) === 'green');
     } else if (alertFilter === 'black') {
-      return coins.filter((coin) => getAlertStatus(coin) === 'black');
+      result = result.filter((coin) => getAlertStatus(coin) === 'black');
     } else if (alertFilter === 'pink') {
-      return coins.filter((coin) => getAlertStatus(coin) === 'pink');
+      result = result.filter((coin) => getAlertStatus(coin) === 'pink');
     }
-    
-    return coins;
+    if (onlyWithPrice2) {
+      result = result.filter((coin) => coin.price2 !== undefined && coin.price2 != null);
+    }
+    if (price3AlertFilter) {
+      result = result.filter((coin) => getPrice3AlertRange(coin.price3) === price3AlertFilter);
+    }
+    return result;
   };
 
   // Apply filter to all history items
@@ -160,8 +169,7 @@ export default function HistoryPage() {
     })
     // If alert filter is active, only show items that have matching coins (length > 0)
     .filter((item) => {
-      if (alertFilter !== null) {
-        // Only show if there are coins matching the filter (must be > 0)
+      if (alertFilter !== null || onlyWithPrice2 || price3AlertFilter) {
         const hasMatchingCoins = item.filtered_coins.length > 0;
         return hasMatchingCoins;
       }
@@ -221,14 +229,16 @@ export default function HistoryPage() {
                 <div className="flex flex-col gap-4">
                   <div>
                     <CardTitle>
-                      Tổng quan lịch sử ({alertFilter === null ? history.length : filteredHistory.length} lần quét
+                      Tổng quan lịch sử ({alertFilter === null && !onlyWithPrice2 && !price3AlertFilter ? history.length : filteredHistory.length} lần quét
                       {alertFilter !== null && ` - ${
                         alertFilter === 'red' ? '🔴 Báo động đỏ' 
                         : alertFilter === 'yellow' ? '🟡 Báo động vàng' 
                         : alertFilter === 'green' ? '🟢 Báo động xanh'
                         : alertFilter === 'black' ? '⚫ Báo động đen'
                         : '♦️ Báo động hồng'
-                      }`})
+                      }`}
+                      {onlyWithPrice2 && `${alertFilter !== null ? ' · ' : ''}Báo động RSI`}
+                      {price3AlertFilter && `${alertFilter !== null || onlyWithPrice2 ? ' · ' : ''}${PRICE3_ALERT_RANGES.find((r) => r.key === price3AlertFilter)?.label ?? price3AlertFilter}`})
                     </CardTitle>
                     <CardDescription className="mt-1">
                       Danh sách các lần quét RSI, nhấn vào một dòng để xem chi tiết
@@ -241,8 +251,9 @@ export default function HistoryPage() {
                         size="sm"
                         onClick={() => {
                           setAlertFilter(alertFilter === 'red' ? null : 'red');
-                          setCurrentPage(1); // Reset to page 1 when filter changes
-                          setExpandedId(null); // Close expanded row when filter changes
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
                         }}
                         className={alertFilter === 'red' ? "bg-red-600 hover:bg-red-700 text-white" : "border-red-600 text-red-600"}
                       >
@@ -253,8 +264,9 @@ export default function HistoryPage() {
                         size="sm"
                         onClick={() => {
                           setAlertFilter(alertFilter === 'yellow' ? null : 'yellow');
-                          setCurrentPage(1); // Reset to page 1 when filter changes
-                          setExpandedId(null); // Close expanded row when filter changes
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
                         }}
                         className={alertFilter === 'yellow' ? "bg-yellow-500 hover:bg-yellow-600 text-white" : "border-yellow-500 text-yellow-600"}
                       >
@@ -265,8 +277,9 @@ export default function HistoryPage() {
                         size="sm"
                         onClick={() => {
                           setAlertFilter(alertFilter === 'green' ? null : 'green');
-                          setCurrentPage(1); // Reset to page 1 when filter changes
-                          setExpandedId(null); // Close expanded row when filter changes
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
                         }}
                         className={alertFilter === 'green' ? "bg-green-600 hover:bg-green-700 text-white" : "border-green-600 text-green-600"}
                       >
@@ -277,8 +290,9 @@ export default function HistoryPage() {
                         size="sm"
                         onClick={() => {
                           setAlertFilter(alertFilter === 'black' ? null : 'black');
-                          setCurrentPage(1); // Reset to page 1 when filter changes
-                          setExpandedId(null); // Close expanded row when filter changes
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
                         }}
                         className={alertFilter === 'black' ? "bg-black hover:bg-gray-900 text-white" : "border-black text-black"}
                       >
@@ -289,13 +303,48 @@ export default function HistoryPage() {
                         size="sm"
                         onClick={() => {
                           setAlertFilter(alertFilter === 'pink' ? null : 'pink');
-                          setCurrentPage(1); // Reset to page 1 when filter changes
-                          setExpandedId(null); // Close expanded row when filter changes
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
                         }}
                         className={alertFilter === 'pink' ? "bg-pink-600 hover:bg-pink-700 text-white" : "border-pink-600 text-pink-600"}
                       >
                         ♦️ Báo động hồng
                       </Button>
+                      <Button
+                        variant={onlyWithPrice2 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setOnlyWithPrice2((v) => !v);
+                          setPrice3AlertFilter(null);
+                          setCurrentPage(1);
+                          setExpandedId(null);
+                        }}
+                        className={onlyWithPrice2 ? "bg-slate-600 hover:bg-slate-700 text-white" : "border-slate-500 text-slate-600"}
+                        title="Chỉ hiển thị các coin có Giá (2) – RSI 45–55 tại 5 nến 30m gần nhất"
+                      >
+                        Báo động RSI
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {PRICE3_ALERT_RANGES.map(({ key, label }) => (
+                        <Button
+                          key={key}
+                          variant={price3AlertFilter === key ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setPrice3AlertFilter(price3AlertFilter === key ? null : key);
+                            setAlertFilter(null);
+                            setOnlyWithPrice2(false);
+                            setCurrentPage(1);
+                            setExpandedId(null);
+                          }}
+                          className={price3AlertFilter === key ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-amber-500 text-amber-600"}
+                          title={`Giá (3) trong khoảng ${PRICE3_ALERT_RANGES.find((r) => r.key === key)?.min}-${PRICE3_ALERT_RANGES.find((r) => r.key === key)?.max}`}
+                        >
+                          {label}
+                        </Button>
+                      ))}
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
                       <div>🔴 <strong>Báo động đỏ:</strong> RSI 85-100 và Funding Rate ≥ 0.05% (0.0005)</div>
@@ -303,6 +352,7 @@ export default function HistoryPage() {
                       <div>🟢 <strong>Báo động xanh:</strong> RSI ≥ 70 và Funding Rate ≥ 0.05% (0.0005)</div>
                       <div>⚫ <strong>Báo động đen:</strong> RSI ≥ 70 và Funding Rate = 0.005% hoặc 0.01%</div>
                       <div>♦️ <strong>Báo động hồng:</strong> (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</div>
+                      <div><strong>Báo động RSI:</strong> Chỉ hiển thị coin có Giá (2) – RSI trong khoảng 45–55 tại một trong 5 nến 30m gần nhất</div>
                     </div>
                   </div>
                 </div>
@@ -317,13 +367,16 @@ export default function HistoryPage() {
                         <TableHead className="text-right whitespace-nowrap">
                           <span className="hidden sm:inline">Số cặp</span>
                           <span className="sm:hidden">Cặp</span>
-                          {alertFilter !== null && (
+                          {(alertFilter !== null || onlyWithPrice2 || price3AlertFilter) && (
                             <span className="ml-1 text-xs">
                               {alertFilter === 'red' ? '(🔴 Đỏ)' 
                                 : alertFilter === 'yellow' ? '(🟡 Vàng)' 
                                 : alertFilter === 'green' ? '(🟢 Xanh)'
                                 : alertFilter === 'black' ? '(⚫ Đen)'
-                                : '(♦️ Hồng)'}
+                                : alertFilter === 'pink' ? '(♦️ Hồng)'
+                                : ''}
+                              {onlyWithPrice2 && (alertFilter !== null ? ' · Báo động RSI' : 'Báo động RSI')}
+                              {price3AlertFilter && (alertFilter !== null || onlyWithPrice2 ? ' · ' : '') + (PRICE3_ALERT_RANGES.find((r) => r.key === price3AlertFilter)?.label ?? price3AlertFilter)}
                             </span>
                           )}
                         </TableHead>
@@ -420,6 +473,8 @@ export default function HistoryPage() {
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">RSI (14)</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Funding</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-10">Giá (USDT)</TableHead>
+                                          <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Giá (2)</TableHead>
+                                          <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Giá (3)</TableHead>
                                           <TableHead className="text-right whitespace-nowrap px-1 text-[14px] w-20">Nến</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-20">Time</TableHead>
                                           <TableHead className="whitespace-nowrap px-1 text-[14px] w-24">Ngày</TableHead>
@@ -430,6 +485,7 @@ export default function HistoryPage() {
                                         {currentHistory.filtered_coins.map((coin: SimpleCoinData, index: number) => {
                                           const { date, time } = parseScanTime(currentHistory.scan_time);
                                           const alertStatus = getAlertStatus(coin);
+                                          const hasPrice3Alert = getPrice3AlertRange(coin.price3) !== null;
                                           const rowClassName = alertStatus === 'red' 
                                             ? 'bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500' 
                                             : alertStatus === 'yellow' 
@@ -440,6 +496,8 @@ export default function HistoryPage() {
                                             ? 'bg-black/5 dark:bg-black/30 border-l-4 border-l-black'
                                             : alertStatus === 'pink'
                                             ? 'bg-pink-50 dark:bg-pink-950/20 border-l-4 border-l-pink-500'
+                                            : hasPrice3Alert
+                                            ? 'bg-amber-50 dark:bg-amber-950/20 border-l-4 border-l-amber-500'
                                             : '';
                                           
                                           return (
@@ -467,11 +525,31 @@ export default function HistoryPage() {
                                                     {(coin.fundingRate * 100).toFixed(4)}%
                                                   </span>
                                                 ) : (
-                                                  <span className="text-muted-foreground text-xs">-</span>
+                                                  <span className="inline-flex text-muted-foreground/50" title="Không có">
+                                                    <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                                  </span>
                                                 )}
                                               </TableCell>
                                               <TableCell className="text-right px-1 text-[15px]">
                                                 ${formatPrice(coin.price)}
+                                              </TableCell>
+                                              <TableCell className="text-right px-1 text-[15px]">
+                                                {coin.price2 !== undefined ? (
+                                                  <span className="text-muted-foreground">${formatPrice(coin.price2)}</span>
+                                                ) : (
+                                                  <span className="inline-flex text-muted-foreground/50 text-2xl" title="Không có Giá (2)">
+                                                    ⊘
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-right px-1 text-[15px]">
+                                                {coin.price3 !== undefined ? (
+                                                  <span className="text-muted-foreground tabular-nums">{coin.price3.toLocaleString()}</span>
+                                                ) : (
+                                                  <span className="inline-flex text-muted-foreground/50 text-2xl" title="Không có Giá (3)">
+                                                    ⊘
+                                                  </span>
+                                                )}
                                               </TableCell>
                                               <TableCell
                                                 className={`text-right px-1 text-[15px] font-medium ${
@@ -500,7 +578,9 @@ export default function HistoryPage() {
                                                     );
                                                   })()
                                                 ) : (
-                                                  <span className="text-muted-foreground text-xs">-</span>
+                                                <span className="inline-flex text-muted-foreground/50 text-2xl" title="Không có Giá (3)">
+                                                  ⊘
+                                                </span>
                                                 )}
                                               </TableCell>
                                               <TableCell className="whitespace-nowrap px-1 text-[15px]">

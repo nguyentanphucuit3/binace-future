@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { applyFilters } from "@/lib/filter-utils";
+import { applyFilters, applyPrice3AlertFilter } from "@/lib/filter-utils";
+import { PRICE3_ALERT_RANGES, type Price3AlertRange } from "@/lib/alerts";
 import type { CoinRSI } from "@/lib/binance";
 
 interface AlertFilterButtonsProps {
@@ -9,6 +10,8 @@ interface AlertFilterButtonsProps {
   selectedRSI: string | null;
   coins: CoinRSI[];
   onFilterChange: (filter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null, filteredCoins: CoinRSI[]) => void;
+  price3AlertFilter?: Price3AlertRange | null;
+  onPrice3AlertFilterChange?: (key: Price3AlertRange | null, filteredCoins: CoinRSI[]) => void;
 }
 
 export function AlertFilterButtons({
@@ -16,10 +19,22 @@ export function AlertFilterButtons({
   selectedRSI,
   coins,
   onFilterChange,
+  price3AlertFilter = null,
+  onPrice3AlertFilterChange,
 }: AlertFilterButtonsProps) {
   const handleAlertFilterClick = (newFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null) => {
+    // Chỉ 1 button báo động: khi chọn đỏ/vàng/xanh/đen/hồng thì không áp dụng lọc Giá (3)
     const filtered = applyFilters(coins, selectedRSI, newFilter);
     onFilterChange(newFilter, filtered);
+  };
+
+  const handlePrice3AlertClick = (key: Price3AlertRange | null) => {
+    if (!onPrice3AlertFilterChange) return;
+    // Chỉ 1 button báo động: khi chọn Giá (3) thì bỏ lọc đỏ/vàng/xanh/đen/hồng
+    const baseFiltered = applyFilters(coins, selectedRSI, null);
+    const newKey = price3AlertFilter === key ? null : key;
+    const filtered = newKey ? applyPrice3AlertFilter(baseFiltered, newKey) : baseFiltered;
+    onPrice3AlertFilterChange(newKey, filtered);
   };
 
   return (
@@ -66,6 +81,22 @@ export function AlertFilterButtons({
           ♦️ BÁO ĐỘNG HỒNG
         </Button>
       </div>
+      {/* Hàng riêng: Báo động theo Giá (3) */}
+      {onPrice3AlertFilterChange && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {PRICE3_ALERT_RANGES.map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={price3AlertFilter === key ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePrice3AlertClick(key)}
+              className={price3AlertFilter === key ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-amber-500 text-amber-600"}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      )}
       {/* Alert Notes */}
       {alertFilter !== null && (
         <div className="mt-2 text-xs text-muted-foreground">

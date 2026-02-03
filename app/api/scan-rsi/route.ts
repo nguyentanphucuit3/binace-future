@@ -77,6 +77,8 @@ export async function POST(request?: Request) {
       fundingRate: coin.fundingRate,
       priceDifference: coin.priceDifference,
       isShortSignal: coin.isShortSignal,
+      price2: coin.price2,
+      price3: coin.price3,
     }));
 
     // If called from Edge Function, skip saving (Edge Function will save directly)

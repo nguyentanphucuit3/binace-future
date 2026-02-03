@@ -1,9 +1,9 @@
 "use client";
 
 import { TableCell, TableRow } from "@/components/ui/table";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { formatPrice, getRSIColor, getRSIBadge } from "@/lib/formatters";
-import { getAlertStatus } from "@/lib/alerts";
+import { getAlertStatus, getPrice3AlertRange } from "@/lib/alerts";
 import type { CoinRSI } from "@/lib/binance";
 
 interface CoinRowProps {
@@ -16,6 +16,7 @@ interface CoinRowProps {
 
 export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol }: CoinRowProps) {
   const alertStatus = getAlertStatus(coin);
+  const hasPrice3Alert = getPrice3AlertRange(coin.price3) !== null;
   const rowClassName = alertStatus === 'red'
     ? 'bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500'
     : alertStatus === 'yellow'
@@ -26,6 +27,8 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
     ? 'bg-black/5 dark:bg-black/30 border-l-4 border-l-black'
     : alertStatus === 'pink'
     ? 'bg-pink-50 dark:bg-pink-950/20 border-l-4 border-l-pink-500'
+    : hasPrice3Alert
+    ? 'bg-amber-50 dark:bg-amber-950/20 border-l-4 border-l-amber-500'
     : '';
 
   const handleCopy = () => {
@@ -65,11 +68,31 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
             {(coin.fundingRate * 100).toFixed(4)}%
           </span>
         ) : (
-          <span className="text-muted-foreground text-xs">-</span>
+          <span className="inline-flex text-muted-foreground/50" title="Không có">
+            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </span>
         )}
       </TableCell>
       <TableCell className="text-right">
         ${formatPrice(coin.price)}
+      </TableCell>
+      <TableCell className="text-right">
+        {coin.price2 !== undefined ? (
+          <span className="text-muted-foreground">${formatPrice(coin.price2)}</span>
+        ) : (
+          <span className="inline-flex text-muted-foreground/50" title="Không có Giá (2)">
+            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </span>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        {coin.price3 !== undefined ? (
+          <span className="text-muted-foreground tabular-nums">{coin.price3.toLocaleString()}</span>
+        ) : (
+          <span className="inline-flex text-muted-foreground/50 text-2xl" title="Không có Giá (3)">
+            ⊘
+          </span>
+        )}
       </TableCell>
       <TableCell
         className={`text-right ${
@@ -115,7 +138,9 @@ export function CoinRow({ coin, index, startIndex, showRSI = true, onCopySymbol 
             );
           })()
         ) : (
-          <span className="text-muted-foreground text-xs">-</span>
+          <span className="inline-flex text-muted-foreground/50" title="Không có">
+            <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </span>
         )}
       </TableCell>
     </TableRow>

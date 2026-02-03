@@ -40,5 +40,36 @@ export const getAlertStatus = (coin: CoinRSI): 'red' | 'yellow' | 'green' | 'pin
   return null;
 };
 
+/** Khoảng Giá (3) → nhãn báo động (BÁO ĐỘNG 300, 600, ...) */
+export type Price3AlertRange = '300' | '600' | '900' | '1200' | '1500' | '1800' | '2100';
+
+/** Cấu hình khoảng Giá (3) và nhãn báo động */
+export const PRICE3_ALERT_RANGES: { min: number; max: number; key: Price3AlertRange; label: string }[] = [
+  { min: 100, max: 300, key: '300', label: 'BÁO ĐỘNG 300' },
+  { min: 301, max: 600, key: '600', label: 'BÁO ĐỘNG 600' },
+  { min: 601, max: 900, key: '900', label: 'BÁO ĐỘNG 900' },
+  { min: 901, max: 1200, key: '1200', label: 'BÁO ĐỘNG 1.200' },
+  { min: 1201, max: 1500, key: '1500', label: 'BÁO ĐỘNG 1.500' },
+  { min: 1501, max: 1800, key: '1800', label: 'BÁO ĐỘNG 1.800' },
+  { min: 1801, max: 2100, key: '2100', label: 'BÁO ĐỘNG 2.100' },
+];
+
+/**
+ * Trả về nhãn báo động theo Giá (3) nếu nằm trong một trong các khoảng đã định.
+ */
+export function getPrice3AlertRange(price3: number | undefined): Price3AlertRange | null {
+  if (price3 === undefined || price3 == null) return null;
+  const r = PRICE3_ALERT_RANGES.find((range) => price3 >= range.min && price3 <= range.max);
+  return r ? r.key : null;
+}
+
+/**
+ * Trả về nhãn hiển thị (vd "BÁO ĐỘNG 300") từ key hoặc từ price3.
+ */
+export function getPrice3AlertLabel(price3: number | undefined): string | null {
+  const key = getPrice3AlertRange(price3);
+  if (!key) return null;
+  return PRICE3_ALERT_RANGES.find((r) => r.key === key)?.label ?? null;
+}
 
 

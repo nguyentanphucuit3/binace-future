@@ -16,11 +16,15 @@ import { AlertFilterButtons } from "./AlertFilterButtons";
 import { ITEMS_PER_PAGE } from "@/constants/scan";
 import type { CoinRSI } from "@/lib/binance";
 
+import type { Price3AlertRange } from "@/lib/alerts";
+
 interface RSIScanResultsProps {
   coins: CoinRSI[];
   filteredCoins: CoinRSI[];
   selectedRSI: string | null;
   alertFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null;
+  price3AlertFilter?: Price3AlertRange | null;
+  onPrice3AlertFilterChange?: (key: Price3AlertRange | null, filteredCoins: CoinRSI[]) => void;
   lastScanTime: string | null;
   scanDuration: number | null;
   currentPage: number;
@@ -34,6 +38,8 @@ export function RSIScanResults({
   filteredCoins,
   selectedRSI,
   alertFilter,
+  price3AlertFilter = null,
+  onPrice3AlertFilterChange,
   lastScanTime,
   scanDuration,
   currentPage,
@@ -75,6 +81,8 @@ export function RSIScanResults({
           selectedRSI={selectedRSI}
           coins={coins}
           onFilterChange={onAlertFilterChange}
+          price3AlertFilter={price3AlertFilter}
+          onPrice3AlertFilterChange={onPrice3AlertFilterChange}
         />
       </CardHeader>
       <CardContent>
@@ -87,6 +95,8 @@ export function RSIScanResults({
                 <TableHead className="text-right">RSI (14)</TableHead>
                 <TableHead className="text-right">Funding</TableHead>
                 <TableHead className="text-right">Giá (USDT)</TableHead>
+                <TableHead className="text-right">Giá (2)</TableHead>
+                <TableHead className="text-right">Giá (3)</TableHead>
                 <TableHead className="text-right">Thay đổi 24h</TableHead>
                 <TableHead className="text-right">Nến</TableHead>
               </TableRow>
@@ -94,7 +104,7 @@ export function RSIScanResults({
             <TableBody>
               {filteredCoins.length === 0 && alertFilter !== null ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-lg">
                         {alertFilter === 'red' ? '🔴' : alertFilter === 'yellow' ? '🟡' : alertFilter === 'green' ? '🟢' : alertFilter === 'black' ? '⚫' : '♦️'}

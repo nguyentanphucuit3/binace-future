@@ -26,13 +26,15 @@ import {
   FUNDING_SCAN_DATA_KEY,
 } from "@/constants/scan";
 import { formatVietnamTime } from "@/lib/formatters";
-import { applyFilters } from "@/lib/filter-utils";
+import { applyFilters, applyPrice3AlertFilter } from "@/lib/filter-utils";
+import type { Price3AlertRange } from "@/lib/alerts";
 
 export default function Home() {
   const [coins, setCoins] = useState<CoinRSI[]>([]);
   const [filteredCoins, setFilteredCoins] = useState<CoinRSI[]>([]);
   const [selectedRSI, setSelectedRSI] = useState<string | null>(null);
   const [alertFilter, setAlertFilter] = useState<'red' | 'yellow' | 'green' | 'pink' | 'black' | null>(null);
+  const [price3AlertFilter, setPrice3AlertFilter] = useState<Price3AlertRange | null>(null);
   const [isPending, startTransition] = useTransition();
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [fundingTimeRemaining, setFundingTimeRemaining] = useState<number>(0);
@@ -72,6 +74,8 @@ export default function Home() {
           fundingRate?: number;
           priceDifference?: number;
           isShortSignal?: boolean;
+          price2?: number;
+          price3?: number;
         };
         
         type SavedScanData = {
@@ -93,6 +97,8 @@ export default function Home() {
             fundingRate: c.fundingRate,
             priceDifference: c.priceDifference,
             isShortSignal: c.isShortSignal,
+            price2: c.price2,
+            price3: c.price3,
           }));
           const restoredFiltered: CoinRSI[] = (parsed.filteredCoins || []).map((c: SavedCoinData) => ({
             symbol: c.symbol,
@@ -102,6 +108,8 @@ export default function Home() {
             fundingRate: c.fundingRate,
             priceDifference: c.priceDifference,
             isShortSignal: c.isShortSignal,
+            price2: c.price2,
+            price3: c.price3,
           }));
           
           setCoins(restoredCoins);
@@ -237,7 +245,8 @@ export default function Home() {
   }, [fundingTimeRemaining]);
 
   const updateFilteredCoins = (filtered: CoinRSI[]) => {
-    setFilteredCoins(filtered);
+    const result = price3AlertFilter ? applyPrice3AlertFilter(filtered, price3AlertFilter) : filtered;
+    setFilteredCoins(result);
     
     // Ensure currentPage doesn't exceed total pages after filtering
     const ITEMS_PER_PAGE = 20;
@@ -283,7 +292,15 @@ export default function Home() {
 
   const handleAlertFilterChange = (newFilter: 'red' | 'yellow' | 'green' | 'pink' | 'black' | null, filteredCoins: CoinRSI[]) => {
     setAlertFilter(newFilter);
+    setPrice3AlertFilter(null); // Chỉ 1 button báo động được chọn: bỏ lọc Giá (3)
     updateFilteredCoins(filteredCoins);
+    setCurrentPage(1);
+  };
+
+  const handlePrice3AlertFilterChange = (key: Price3AlertRange | null, filteredCoins: CoinRSI[]) => {
+    setPrice3AlertFilter(key);
+    setAlertFilter(null); // Chỉ 1 button báo động được chọn: bỏ lọc đỏ/vàng/xanh/đen/hồng
+    setFilteredCoins(filteredCoins);
     setCurrentPage(1);
   };
 
@@ -310,7 +327,8 @@ export default function Home() {
       setLastScanTime(scanTime);
       
       setSelectedRSI(">=70");
-      setAlertFilter(null); // Reset alert filter when scanning new data
+      setAlertFilter(null);
+      setPrice3AlertFilter(null);
       
       // Auto switch to RSI tab when scan completes
       setActiveTab('rsi');
@@ -326,7 +344,7 @@ export default function Home() {
           // Xóa data cũ trước
           sessionStorage.removeItem(SCAN_DATA_KEY);
           
-          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate, priceDifference, isShortSignal
+          // Chỉ lưu các field cần thiết: symbol, rsi, price, fundingRate, priceDifference, isShortSignal, price2
           const minimalCoins = result.coins.map((coin) => ({
             symbol: coin.symbol,
             rsi: coin.rsi,
@@ -334,6 +352,8 @@ export default function Home() {
             fundingRate: coin.fundingRate,
             priceDifference: coin.priceDifference,
             isShortSignal: coin.isShortSignal,
+            price2: coin.price2,
+            price3: coin.price3,
           }));
           const minimalFiltered = filtered.map((coin) => ({
             symbol: coin.symbol,
@@ -342,6 +362,8 @@ export default function Home() {
             fundingRate: coin.fundingRate,
             priceDifference: coin.priceDifference,
             isShortSignal: coin.isShortSignal,
+            price2: coin.price2,
+            price3: coin.price3,
           }));
           
           // Lưu data mới (ghi đè lên data cũ nếu có)
@@ -364,6 +386,8 @@ export default function Home() {
               fundingRate: coin.fundingRate,
               priceDifference: coin.priceDifference,
               isShortSignal: coin.isShortSignal,
+              price2: coin.price2,
+              price3: coin.price3,
             }));
             const minimalFiltered = filtered.slice(0, 100).map((coin) => ({
               symbol: coin.symbol,
@@ -372,6 +396,8 @@ export default function Home() {
               fundingRate: coin.fundingRate,
               priceDifference: coin.priceDifference,
               isShortSignal: coin.isShortSignal,
+              price2: coin.price2,
+              price3: coin.price3,
             }));
             sessionStorage.setItem(SCAN_DATA_KEY, JSON.stringify({
               coins: minimalCoins,
@@ -385,7 +411,7 @@ export default function Home() {
         }
       }
       
-      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate, priceDifference, isShortSignal
+      // Save to history - only coins with RSI >= 70, only symbol, rsi, price, fundingRate, priceDifference, isShortSignal, price2
       const coinsToSave = filtered.map((coin) => ({
         symbol: coin.symbol,
         rsi: coin.rsi,
@@ -393,6 +419,8 @@ export default function Home() {
         fundingRate: coin.fundingRate,
         priceDifference: coin.priceDifference,
         isShortSignal: coin.isShortSignal,
+        price2: coin.price2,
+        price3: coin.price3,
       }));
       
       await saveScanHistory({
@@ -585,6 +613,8 @@ export default function Home() {
             filteredCoins={filteredCoins}
             selectedRSI={selectedRSI}
             alertFilter={alertFilter}
+            price3AlertFilter={price3AlertFilter}
+            onPrice3AlertFilterChange={handlePrice3AlertFilterChange}
             lastScanTime={lastScanTime}
             scanDuration={scanDuration}
             currentPage={currentPage}
