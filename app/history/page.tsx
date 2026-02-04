@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Trash2, ArrowLeft, Eye, EyeOff, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { SimpleCoinData } from "@/app/actions/history";
-import { getPrice3AlertRange, PRICE3_ALERT_RANGES, type Price3AlertRange } from "@/lib/alerts";
+import { getPrice3AlertRange, isFundingInRange005To2, PRICE3_ALERT_RANGES, type Price3AlertRange } from "@/lib/alerts";
 
 const formatPrice = (price: number, minDecimals = 2, maxDecimals = 8): string => {
   return price.toLocaleString("en-US", {
@@ -150,10 +150,19 @@ export default function HistoryPage() {
       result = result.filter((coin) => getAlertStatus(coin) === 'pink');
     }
     if (onlyWithPrice2) {
-      result = result.filter((coin) => coin.price2 !== undefined && coin.price2 != null);
+      result = result.filter(
+        (coin) =>
+          coin.price2 !== undefined &&
+          coin.price2 != null &&
+          isFundingInRange005To2(coin.fundingRate)
+      );
     }
     if (price3AlertFilter) {
-      result = result.filter((coin) => getPrice3AlertRange(coin.price3) === price3AlertFilter);
+      result = result.filter(
+        (coin) =>
+          getPrice3AlertRange(coin.price3) === price3AlertFilter &&
+          isFundingInRange005To2(coin.fundingRate)
+      );
     }
     return result;
   };
@@ -352,7 +361,8 @@ export default function HistoryPage() {
                       <div>🟢 <strong>Báo động xanh:</strong> RSI ≥ 70 và Funding Rate ≥ 0.05% (0.0005)</div>
                       <div>⚫ <strong>Báo động đen:</strong> RSI ≥ 70 và Funding Rate = 0.005% hoặc 0.01%</div>
                       <div>♦️ <strong>Báo động hồng:</strong> (1) Nến đỏ (2) Đã vượt Band vàng (3) Giá dưới Band vàng (4) RSI 70-79 (5) Funding Rate ≥ 0.05%</div>
-                      <div><strong>Báo động RSI:</strong> Chỉ hiển thị coin có Giá (2) – RSI trong khoảng 45–55 tại một trong 5 nến 30m gần nhất</div>
+                      <div><strong>Báo động RSI:</strong> Chỉ hiển thị coin có Giá (2) + Funding 0.005%–2%</div>
+                      <div><strong>Báo động 300–2100:</strong> Giá (3) trong khoảng tương ứng + Funding 0.005%–2%</div>
                     </div>
                   </div>
                 </div>

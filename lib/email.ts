@@ -107,7 +107,7 @@ export async function sendAlertNotification({
   const hasPink = pinkCoins.length > 0;
   const hasPrice3Funding = price3FundingCoins.length > 0;
 
-  // Determine subject and priority
+  // Determine subject - luôn thêm Báo động Giá (3) khi có (tránh bị ẩn khi có báo động khác)
   let subject = '🔔 ';
   if (hasRed) {
     subject += `[🔴 BÁO ĐỘNG ĐỎ] ${redCoins.length} coin`;
@@ -121,6 +121,9 @@ export async function sendAlertNotification({
     subject += `[🟢 BÁO ĐỘNG XANH] ${greenCoins.length} coin`;
   } else if (hasPrice3Funding) {
     subject += `[🟠 BÁO ĐỘNG GIÁ (3)] ${price3FundingCoins.length} coin`;
+  }
+  if (hasPrice3Funding && (hasRed || hasBlack || hasPink || hasYellow || hasGreen)) {
+    subject += ` + [🟠 Giá (3)] ${price3FundingCoins.length}`;
   }
   subject += ` - Binance Futures Scan ${scanTime}`;
 
@@ -247,6 +250,34 @@ export async function sendAlertNotification({
           </div>
           ` : ''}
 
+          ${hasPrice3Funding ? `
+          <div class="alert-section">
+            <div class="alert-title" style="background: #fef3c7; color: #92400e; border-left: 4px solid #d97706;">🟠 Báo động Giá (3) (Giá (3) 100-2100 + RSI ≥ 70 + Funding 0.005%-2%)</div>
+            <table class="coins-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th style="text-align: right;">RSI</th>
+                  <th style="text-align: right;">Funding Rate</th>
+                  <th style="text-align: right;">Giá (3)</th>
+                  <th style="text-align: right;">Giá (2)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${price3FundingCoins.map(coin => `
+                  <tr>
+                    <td class="symbol">${coin.symbol}</td>
+                    <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
+                    <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
+                    <td style="text-align: right;">${coin.price3 != null ? coin.price3.toLocaleString() : '-'}</td>
+                    <td style="text-align: right;">${coin.price2 != null ? '$' + formatPrice(coin.price2) : '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
           ${hasYellow ? `
           <div class="alert-section">
             <div class="alert-title">🟡 Báo động Vàng (RSI 75-79 VÀ Funding Rate ≥ 0.05%)</div>
@@ -344,36 +375,6 @@ export async function sendAlertNotification({
                     <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
                     <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
                     <td style="text-align: right;">$${formatPrice(coin.price)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-          ` : ''}
-
-          ${hasPrice3Funding ? `
-          <div class="alert-section">
-            <div class="alert-title" style="background: #fef3c7; color: #92400e; border-left: 4px solid #d97706;">🟠 Báo động Giá (3) (Giá (3) trong khoảng 300-2100 + RSI ≥ 70 + Funding 0.05% hoặc 0.01%)</div>
-            <table class="coins-table">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th style="text-align: right;">RSI</th>
-                  <th style="text-align: right;">Funding Rate</th>
-                  <th style="text-align: right;">Giá (USDT)</th>
-                  <th style="text-align: right;">Giá (2)</th>
-                  <th style="text-align: right;">Giá (3)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${price3FundingCoins.map(coin => `
-                  <tr>
-                    <td class="symbol">${coin.symbol}</td>
-                    <td style="text-align: right;">${coin.rsi.toFixed(2)}</td>
-                    <td style="text-align: right;" class="funding-positive">${formatFundingRate(coin.fundingRate)}</td>
-                    <td style="text-align: right;">$${formatPrice(coin.price)}</td>
-                    <td style="text-align: right;">${coin.price2 != null ? '$' + formatPrice(coin.price2) : '-'}</td>
-                    <td style="text-align: right;">${coin.price3 != null ? coin.price3.toLocaleString() : '-'}</td>
                   </tr>
                 `).join('')}
               </tbody>

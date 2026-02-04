@@ -1,6 +1,6 @@
 import type { CoinRSI } from "@/lib/binance";
 import { RSI_FILTERS, type RSIFilter, type FilterButton } from "@/constants/scan";
-import { getAlertStatus, getPrice3AlertRange, type Price3AlertRange } from "@/lib/alerts";
+import { getAlertStatus, getPrice3AlertRange, isFundingInRange005To2, type Price3AlertRange } from "@/lib/alerts";
 
 /**
  * Apply RSI filter to coins
@@ -65,13 +65,17 @@ export const applyFilters = (
 
 /**
  * Lọc theo báo động Giá (3) (100-300 → 300, 301-600 → 600, ...).
+ * Thêm điều kiện: Funding 0.005% - 2%.
  */
 export const applyPrice3AlertFilter = (
   coins: CoinRSI[],
   price3AlertFilter: Price3AlertRange | null
 ): CoinRSI[] => {
   if (price3AlertFilter === null) return coins;
-  return coins.filter((coin) => getPrice3AlertRange(coin.price3) === price3AlertFilter);
+  return coins.filter(
+    (coin) =>
+      getPrice3AlertRange(coin.price3) === price3AlertFilter && isFundingInRange005To2(coin.fundingRate)
+  );
 };
 
 

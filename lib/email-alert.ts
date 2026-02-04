@@ -21,14 +21,13 @@ const formatVietnamTime = (timestamp: number): string => {
   });
 };
 
-/** Điều kiện gửi email: Giá (3) trong khoảng 300-2100 + RSI >= 70 + Funding 0.05% hoặc 0.01% */
+/** Điều kiện gửi email: Giá (3) trong khoảng 300-2100 + RSI >= 70 + Funding 0.005% - 2% */
 function isPrice3FundingAlert(coin: CoinRSI): boolean {
   const price3Range = getPrice3AlertRange(coin.price3);
   if (!price3Range) return false;
   if (coin.rsi < 70) return false;
   const fr = coin.fundingRate ?? 0;
-  const fundingOk = fr >= 0.0005 || Math.abs(fr * 100 - 0.01) < 0.0001;
-  return fundingOk;
+  return fr >= 0.00005 && fr <= 0.02; // 0.005% - 2%
 }
 
 export type AlertStatusForEmail = 'red' | 'yellow' | 'green' | 'pink' | 'black' | 'price3_funding';
@@ -46,7 +45,7 @@ export async function checkAndSendAlertEmail(coins: CoinRSI[]): Promise<{
       if (alertStatus) {
         alertCoins.push({ ...coin, alertStatus });
       }
-      // Thêm điều kiện gửi email: báo động Giá (3) (300-2100) + RSI >= 70 + Funding 0.05% hoặc 0.01%
+      // Thêm điều kiện gửi email: báo động Giá (3) (100-2100) + RSI >= 70 + Funding 0.005%-2%
       if (isPrice3FundingAlert(coin)) {
         alertCoins.push({ ...coin, alertStatus: 'price3_funding' });
       }
@@ -57,6 +56,10 @@ export async function checkAndSendAlertEmail(coins: CoinRSI[]): Promise<{
       return { sent: false, alertCount: 0 };
     }
 
+    const price3Count = alertCoins.filter((c) => c.alertStatus === 'price3_funding').length;
+    if (price3Count > 0) {
+      console.log(`[Email Alert] 🟠 Báo động Giá (3): ${price3Count} coin`);
+    }
     console.log(`[Email Alert] 🔔 Found ${alertCoins.length} coins with alerts, sending email notification...`);
     const scanTime = formatVietnamTime(Date.now());
     

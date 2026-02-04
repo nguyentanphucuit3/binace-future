@@ -63,6 +63,12 @@ export function getPrice3AlertRange(price3: number | undefined): Price3AlertRang
   return r ? r.key : null;
 }
 
+/** Funding rate trong khoảng 0.005% - 2% (dùng cho Báo động RSI và báo động Giá 3) */
+export function isFundingInRange005To2(fundingRate: number | undefined): boolean {
+  const fr = fundingRate ?? 0;
+  return fr >= 0.00005 && fr <= 0.02; // 0.005% - 2%
+}
+
 /**
  * Trả về nhãn hiển thị (vd "BÁO ĐỘNG 300") từ key hoặc từ price3.
  */

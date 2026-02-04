@@ -81,7 +81,7 @@ export function AlertFilterButtons({
           ♦️ BÁO ĐỘNG HỒNG
         </Button>
       </div>
-      {/* Hàng riêng: Báo động theo Giá (3) */}
+      {/* Hàng riêng: Báo động theo Giá (3) – Funding 0.005%–2% */}
       {onPrice3AlertFilterChange && (
         <div className="flex flex-wrap gap-2 mt-3">
           {PRICE3_ALERT_RANGES.map(({ key, label }) => (
@@ -98,6 +98,11 @@ export function AlertFilterButtons({
         </div>
       )}
       {/* Alert Notes */}
+      {price3AlertFilter !== null && (
+        <div className="mt-2 text-xs text-muted-foreground">
+          <span>Báo động Giá (3): Funding 0.005%–2%</span>
+        </div>
+      )}
       {alertFilter !== null && (
         <div className="mt-2 text-xs text-muted-foreground">
           {alertFilter === 'red' ? (
