@@ -130,10 +130,10 @@ export async function scanRSI(): Promise<{
             // Continue without short signal if it fails
           }
 
-          // Giá (2): tại 5 mốc 30m gần nhất (nến 195..199), nếu có RSI 45-55 thì lấy giá đóng cửa tại mốc đó
+          // Giá (2): tại 7 mốc 30m gần nhất (nến 193..199), nếu có RSI 45-55 thì lấy giá đóng cửa tại mốc đó
           let price2: number | undefined = undefined;
-          const last5StartIndex = Math.max(0, last20030mKlines.length - 5);
-          for (let i = last20030mKlines.length - 1; i >= last5StartIndex && i >= 14; i--) {
+          const last7StartIndex = Math.max(0, last20030mKlines.length - 7);
+          for (let i = last20030mKlines.length - 1; i >= last7StartIndex && i >= 14; i--) {
             const closesUpToI = closes30m.slice(0, i + 1);
             const rsiAtI = calculateRSI(closesUpToI, 14);
             if (rsiAtI !== null && rsiAtI >= 45 && rsiAtI <= 55) {

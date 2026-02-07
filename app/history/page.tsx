@@ -330,7 +330,7 @@ export default function HistoryPage() {
                           setExpandedId(null);
                         }}
                         className={onlyWithPrice2 ? "bg-slate-600 hover:bg-slate-700 text-white" : "border-slate-500 text-slate-600"}
-                        title="Chỉ hiển thị các coin có Giá (2) – RSI 45–55 tại 5 nến 30m gần nhất"
+                        title="Chỉ hiển thị các coin có Giá (2) – RSI 45–55 tại 7 nến 30m gần nhất"
                       >
                         Báo động RSI
                       </Button>
