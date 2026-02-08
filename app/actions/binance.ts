@@ -142,12 +142,15 @@ export async function scanRSI(): Promise<{
             }
           }
 
-          // Giá (3): giá trị tuyệt đối chữ số sau số thập phân của (price2 - price), vd 0,005578 → 5578
+          // Giá (3): diff = |format(price2) - format(price)|, format: bỏ số 0 phía trước rồi lấy 4 chữ số (giữ số 0 đằng sau). vd 1,0050000 → 5000
           let price3: number | undefined = undefined;
           if (price2 !== undefined) {
-            const diff = Math.abs(price2 - ticker.price);
-            const afterDot = (diff.toFixed(8).split('.')[1] || '').replace(/0+$/, '');
-            price3 = afterDot === '' ? 0 : parseInt(afterDot, 10);
+            const format = (v: number): number => {
+              const afterDot = (Math.abs(v).toFixed(8).split('.')[1] || '').replace(/^0+/, '');
+              const fourDigits = afterDot.slice(0, 4);
+              return fourDigits === '' ? 0 : parseInt(fourDigits, 10);
+            };
+            price3 = Math.abs(format(price2) - format(ticker.price));
           }
 
           const coin: CoinRSI = {

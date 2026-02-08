@@ -25,7 +25,7 @@ export interface CoinRSI {
   isShortSignal?: boolean; // Tín hiệu SHORT từ checkShortSignal (nến đỏ + đã vượt band + giá dưới band)
   /** Giá (2): giá tại một trong 7 nến 30m gần nhất mà RSI nằm trong 45-55 (nếu có) */
   price2?: number;
-  /** Giá (3): chữ số sau dấu thập phân của |price2 - price| (vd: 0,005578 → 5578), chỉ khi có price2 */
+  /** Giá (3): diff = |format(price2) - format(price)|, format: bỏ số 0 phía trước, lấy 4 chữ số, giữ số 0 đằng sau (vd: 1,0050000 → 5000), chỉ khi có price2 */
   price3?: number;
 }
 
